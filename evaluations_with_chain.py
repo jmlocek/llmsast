@@ -51,13 +51,9 @@ def save_progress(progress_file, data):
 
 def load_progress(progress_file):
     if os.path.exists(progress_file):
-        try:
-            with open(progress_file, 'r') as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            print(f"Warning: Progress file {progress_file} is empty or invalid. Starting fresh.", file=sys.stderr)
-            return {}
-    return {}
+        with open(progress_file, 'r') as f:
+            return json.load(f)
+    return None
 
 def evaluate_vulnerability_fix_dataset():
     """
@@ -182,6 +178,16 @@ def evaluate_vulnerability_fix_dataset():
                     print(f"Error: 'has_vulnerability' key missing from agent response: {verdict_string_fixed}", file=sys.stderr)
                 except Exception as e:
                     print(f"An unknown error occurred during fixed analysis: {e}", file=sys.stderr)
+
+                # Save progress after processing each sample
+                progress = {
+                    "tp": tp,
+                    "fp": fp,
+                    "tn": tn,
+                    "fn": fn,
+                    "current_index": index + 1
+                }
+                save_progress(progress_file, progress)
 
             # --- 3. Calculate and Print Final Metrics ---
             print("\n--- Evaluation Complete ---")
