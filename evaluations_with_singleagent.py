@@ -1,12 +1,14 @@
 import pandas as pd
 import sys
 import json
+import os
 from dataclasses import dataclass
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from agents_logic import CodeAgents, AgentConfig
+from llmsastchain import CodeAgents
 
 def extract_json_from_string(text):
     """
@@ -44,149 +46,103 @@ def extract_json_from_string(text):
         raise e
 
 
+def save_progress(progress_file, data):
+    with open(progress_file, 'w') as f:
+        json.dump(data, f)
+
+def load_progress(progress_file):
+    if os.path.exists(progress_file):
+        with open(progress_file, 'r') as f:
+            return json.load(f)
+    return None
+
 def evaluate_vulnerability_fix_dataset_single():
     """
     Uruchamia ewaluację na zbiorze danych w trybie SINGLE AGENT.
     """
     print("--- Initializing agents ---")
     print("--- Running in SINGLE AGENT mode ---")
-        
-    agents = CodeAgents()  
-    
-    csv_file = "datasets/vulnerability_fix_dataset.csv"
 
-    # Liczniki dla metryk
-    tp = 0  # True Positives
-    fp = 0  # False Positives
-    tn = 0  # True Negatives
-    fn = 0  # False Negatives
+    agents = CodeAgents()
+
+    csv_file = "datasets/vulnerability_fix_dataset.csv"
+    progress_file = "single_agent_progress.json"
+
+    # Load progress if available
+    progress = load_progress(progress_file)
+    if progress:
+        print("Resuming from saved progress...")
+        tp = progress.get("tp", 0)
+        fp = progress.get("fp", 0)
+        tn = progress.get("tn", 0)
+        fn = progress.get("fn", 0)
+        start_index = progress.get("current_index", 0)
+    else:
+        print("Starting fresh...")
+        tp = fp = tn = fn = 0
+        start_index = 0
 
     try:
         df = pd.read_csv(csv_file)
-        
+
         if 'vulnerable_code' not in df.columns or 'fixed_code' not in df.columns:
             print(f"Error: CSV must contain 'vulnerable_code' and 'fixed_code' columns.", file=sys.stderr)
             return
-        
+
         total_samples = len(df)
         print(f"--- Successfully loaded {total_samples} samples from {csv_file} ---")
-        
-        for index, row in df.iterrows():
+
+        for index, row in df.iloc[start_index:].iterrows():
             print(f"\n--- Processing Sample {index + 1} of {total_samples} ---")
-            
-            # --- 1. Test kodu PODATNEGO (Test pozytywny) ---
+
             vuln_code = row['vulnerable_code']
-            expected_vulnerability = row.get('vulnerability_type', 'N/A') # Użyj .get() dla bezpieczeństwa
-            
+            expected_vulnerability = row.get('vulnerability_type', 'N/A')
+
             if not isinstance(vuln_code, str) or not vuln_code.strip():
                 print(f"Skipping row {index + 1} (no vulnerable code found)")
                 continue
 
             print(f"Analyzing vulnerable code for: {expected_vulnerability}")
-            verdict_string = "" # Inicjalizacja do raportowania błędów
             try:
-                # Uruchom tryb pojedynczego agenta
-                verdict_string = agents.analyze_code_single(f"vulnerable_code: {vuln_code}")
-                
-                # 2. PARSOWANIE JSON
-                verdict_vuln = extract_json_from_string(verdict_string)
-                
-                print(verdict_vuln)
-                if verdict_vuln.get('has_vulnerability'): 
+                # Use the single agent chain directly
+                analyzed_code = agents._single_agent_chain(vuln_code)
+
+                print("\n--- Code Context Summary ---")
+                print(analyzed_code)
+
+                if "has_vulnerability" in analyzed_code:
                     tp += 1
                     print("Result: CORRECTLY detected vulnerability (TP)")
                 else:
                     fn += 1
                     print("Result: FAILED to detect vulnerability (FN)")
 
-            except json.JSONDecodeError:
-                print(f"Error: Could not parse JSON response from agent: {verdict_string}", file=sys.stderr)
-                fn += 1 # Licz jako błąd wykrycia
-            except KeyError:
-                print(f"Error: 'has_vulnerability' key missing from agent response: {verdict_string}", file=sys.stderr)
-                fn += 1 # Licz jako błąd wykrycia
             except Exception as e:
-                print(f"An unknown error occurred during vuln analysis: {e}", file=sys.stderr)
-                fn += 1 # Licz jako błąd wykrycia
+                print(f"Error processing sample {index + 1}: {e}", file=sys.stderr)
 
-            # --- 2. Test kodu NAPRAWIONEGO (Test negatywny / Test FP) ---
-            fixed_code = row['fixed_code']
-            
-            if not isinstance(fixed_code, str) or not fixed_code.strip():
-                print(f"Skipping FP test for row {index + 1} (no fixed code found)")
-                continue
-
-            print("Analyzing fixed code (expecting no vulnerability)...")
-            verdict_string_fixed = "" # Inicjalizacja do raportowania błędów
-            try:
-                # Uruchom tryb pojedynczego agenta
-                verdict_string_fixed = agents.analyze_code_single(f"fixed_code: {fixed_code}")
-
-                # 2. PARSOWANIE JSON
-                verdict_fixed = extract_json_from_string(verdict_string_fixed)
-                
-                # 3. Dostęp do klucza słownika
-                if verdict_fixed.get('has_vulnerability'):
-                    fp += 1
-                    print("Result: INCORRECTLY detected vulnerability (FP)")
-                else:
-                    tn += 1
-                    print("Result: CORRECTLY ignored safe code (TN)")
-                    
-            except json.JSONDecodeError:
-                print(f"Error: Could not parse JSON response from agent: {verdict_string_fixed}", file=sys.stderr)
-                fp += 1 # Licz błędną odpowiedź na 'bezpiecznym' pliku jako Fałszywy Pozytyw
-            except KeyError:
-                print(f"Error: 'has_vulnerability' key missing from agent response: {verdict_string_fixed}", file=sys.stderr)
-                fp += 1 # Również licz jako FP
-            except Exception as e:
-                print(f"An unknown error occurred during fixed analysis: {e}", file=sys.stderr)
-                fp += 1 # Również licz jako FP
-
-        # --- 3. Oblicz i wydrukuj końcowe metryki ---
-        print("\n--- Evaluation Complete ---")
-        
-        # Sprawdź, czy jakiekolwiek testy zostały uruchomione
-        total_positive_cases = tp + fn
-        total_negative_cases = tn + fp
-        
-        if total_positive_cases == 0 and total_negative_cases == 0:
-            print("No valid samples were processed.")
-            return
-
-        print(f"Total Vulnerable Samples Tested: {total_positive_cases}")
-        print(f"Total Fixed Samples Tested:     {total_negative_cases}")
-        print("---")
-        print(f"True Positives (TP):  {tp}")
-        print(f"False Negatives (FN): {fn}")
-        print(f"True Negatives (TN):  {tn}")
-        print(f"False Positives (FP): {fp}")
-        print("---")
-
-        # Oblicz metryki
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-        
-        # Dokładność dla zadania "podatny"
-        positive_accuracy = tp / total_positive_cases if total_positive_cases > 0 else 0.0
-        # Dokładność dla zadania "naprawiony" (FP)
-        negative_accuracy = tn / total_negative_cases if total_negative_cases > 0 else 0.0
-        # Ogólna dokładność
-        overall_accuracy = (tp + tn) / (total_positive_cases + total_negative_cases) if (total_positive_cases + total_negative_cases) > 0 else 0.0
-
-
-        print(f"Overall Accuracy:  {overall_accuracy:.2%} (Correct classifications / Total cases)")
-        print(f"Positive Accuracy: {positive_accuracy:.2%} (Recall / Sensitivity)")
-        print(f"Negative Accuracy: {negative_accuracy:.2%} (Specificity)")
-        print("---")
-        print(f"Precision: {precision:.2%}  (How trustworthy are the 'vulnerable' alerts?)")
-        print(f"Recall:    {recall:.2%}  (How many real bugs did we find?)")
-        print(f"F1-Score:  {f1_score:.2%}")
+            # Save progress periodically
+            if (index + 1) % 10 == 0:
+                save_progress(progress_file, {
+                    "tp": tp,
+                    "fp": fp,
+                    "tn": tn,
+                    "fn": fn,
+                    "current_index": index + 1
+                })
 
     except FileNotFoundError:
         print(f"Error: The file {csv_file} was not found.", file=sys.stderr)
     except pd.errors.EmptyDataError:
         print(f"Error: The file {csv_file} is empty.", file=sys.stderr)
+    except KeyboardInterrupt:
+        print("Execution interrupted. Saving progress...")
+        save_progress(progress_file, {
+            "tp": tp,
+            "fp": fp,
+            "tn": tn,
+            "fn": fn,
+            "current_index": index + 1
+        })
+        print("Progress saved. You can resume later.")
     except Exception as e:
-        print(f"An unhandled error occurred: {e}", file=sys.stderr)
+        print(f"An error occurred: {e}", file=sys.stderr)
