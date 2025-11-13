@@ -8,7 +8,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from agents_logic import CodeAgents, AgentConfig
-from llmsastchain import CodeAgents
 
 def extract_json_from_string(text):
     """

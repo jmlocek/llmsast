@@ -1,8 +1,6 @@
 import os
 import sys
 from dataclasses import dataclass
-from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -32,21 +30,14 @@ SYSTEM_PROMPT_RISK_FP = load_prompt_from_file("fp_remover_agent.txt")
 
 @dataclass(frozen=True)
 class AgentConfig:
-    model: str = "gemini-2.5-flash"
-    temperature: float = 0.0
-    api_key: str | None = None  # domyślnie weź z ENV
+    model: str = "ibm/granite-4-h-tiny"
+    temperature: float = 0.2
+    base_url: str = "http://10.147.18.100:1234/v1"  # Updated to use the local LLM
 
 
 class CodeAgents:
     def __init__(self, config: AgentConfig | None = None) -> None:
-        load_dotenv()
-        api_key = (config.api_key if config else None) or os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "Missing GEMINI_API_KEY. Set it in your environment or .env file."
-            )
-
-        self._config = config or AgentConfig(api_key=api_key)
+        self._config = config or AgentConfig()
 
         # Zbuduj łańcuchy
         self._context_chain = self._make_chain(
@@ -77,15 +68,35 @@ class CodeAgents:
         )
 
     def _make_chain(self, *, system_prompt: str, human_template: str):
-        llm = ChatGoogleGenerativeAI(
-            model=self._config.model,
-            temperature=self._config.temperature,
-            api_key=self._config.api_key,
-        )
-        prompt = ChatPromptTemplate.from_messages(
-            [("system", system_prompt), ("human", human_template)]
-        )
-        return prompt | llm | StrOutputParser()
+        def local_llm_call(prompt: str) -> str:
+            import requests
+            try:
+                response = requests.post(
+                    url="http://10.147.18.100:1234/v1/chat/completions",
+                    headers={"Content-Type": "application/json"},
+                    json={
+                        "model": "ibm/granite-4-h-tiny",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": self._config.temperature,
+                    },
+                    timeout=30,
+                )
+                response.raise_for_status()
+                return response.json()["choices"][0]["message"]["content"]
+            except Exception as e:
+                raise RuntimeError(f"Local LLM call failed: {e}")
+
+        class LocalChain:
+            def __init__(self, system_prompt, human_template):
+                self.system_prompt = system_prompt
+                self.human_template = human_template
+
+            def invoke(self, variables: dict):
+                prompt = self.human_template.format(**variables)
+                full_prompt = f"SYSTEM:\n{self.system_prompt}\n\nUSER:\n{prompt}"
+                return local_llm_call(full_prompt)
+
+        return LocalChain(system_prompt, human_template)
 
     # ============ Publiczny interfejs ============
     def analyze_code(self, input_code: str) -> str:
