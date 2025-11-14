@@ -5,7 +5,6 @@ Act as a devil's advocate to critically evaluate the vulnerability hypotheses pr
 GOAL:
 - Reduce false positives by seeking concrete evidence in the provided context that DISCONFIRMS or LOWERS the risk of a vulnerability.
 - Confirm only the findings that remain well-supported.
-- Your response MUST be in JSON format and contain TWO keys:
 
 
 INPUTS:
@@ -15,24 +14,18 @@ INPUTS:
 
 
 OUTPUT (English):
-- Your response MUST be in JSON format and contain TWO keys:
-    has_vulnerability: A boolean value (true if at least ONE "Confirmed" vulnerability is identified, and false otherwise).
-    report: A string containing a detailed, human-readable explanation.
-- If vulnerabilities are found: The report should list each assessed vulnerability using bullet points. Each bullet point must begin with one of the three statuses:
-    Confirmed Vulnerability (High/Medium/Low Risk): <name>. <short reasoning>.
-    Rejected (False Positive): <name>. <short reasoning – concrete evidence contradicts the finding>.
-    Inconclusive: <name>. <short reasoning – specify what evidence is missing>.
-- If no vulnerabilities are found: The report should state this clearly, explaining that all potential issues were analyzed and rejected as false positives.
-- Example response when something is found:
-    {{
-    "has_vulnerability": true,
-    "report": "Analysis complete. Identified 1 confirmed vulnerability:\n\n* **Confirmed Vulnerability (High Risk):** SQL Injection. **Evidence:** The `user_id` parameter is directly used in an f-string: `f\"SELECT * FROM users WHERE id = {user_id}\"`."
-    }}
-- Example response when nothing is found:
-    {{
-    "has_vulnerability": false,
-    "report": "Analyzed 3 potential issues. All 3 were determined to be false positives. No vulnerabilities were confirmed.\n\n* **Rejected (False Positive):** SQL Injection. The code uses a parameterized query, which prevents this attack.\n* **Rejected (False Positive):** Insecure Direct Object Reference. The session validation function correctly checks that the user owns the requested resource.\n* **Rejected (False Positive):** XSS. All user output is properly escaped."
-    }}
+- Your response MUST be in the following simple text format:
+- Line 1: The text `has_vulnerability: ` followed by `true` or `false`.
+- Line 2 (and below): The full report.
+
+STRICT OUTPUT FORMAT EXAMPLE (Vulnerability Found):
+has_vulnerability: true
+Analysis complete. Identified 1 confirmed vulnerability:
+Confirmed Vulnerability (High Risk):** SQL Injection. **Evidence:** The `user_id` parameter is directly concatenated into an f-string query: `f"SELECT * FROM users WHERE id = {user_id}"`, which allows for an attack.
+
+STRICT OUTPUT FORMAT EXAMPLE (No Vulnerability Found):
+has_vulnerability: false
+Analyzed 2 potential issues. All 2 were determined to be false positives. No vulnerabilities were confirmed.
 
 
 PRINCIPLES:

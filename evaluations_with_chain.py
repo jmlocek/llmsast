@@ -9,41 +9,51 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from agents_logic import CodeAgents, AgentConfig
 
-def extract_json_from_string(text):
+def extract_simple_verdict_and_report(text: str) -> dict:
     """
-    Extracts the first JSON object from a string that might be
-    wrapped in Markdown (e.g., ```json ... ```) or other text.
+    Extracts the verdict and report from the simple text format.
+    Format:
+    has_vulnerability: [true/false]
+    [Report text...]
     """
-    if not isinstance(text, str):
-        raise json.JSONDecodeError("Input was not a string", str(text), 0)
-        
-    try:
-        # Find the first opening brace
-        start_index = text.find('{')
-        # Find the last closing brace
-        end_index = text.rfind('}')
-        
-        if start_index != -1 and end_index != -1 and end_index > start_index:
-            json_string = text[start_index : end_index + 1]
-            
-            # Now, attempt to parse this extracted substring
-            return json.loads(json_string)
-        else:
-            # If we couldn't find a { or }, it's not valid JSON
-            raise json.JSONDecodeError(
-                "Could not find a valid JSON object block (missing '{' or '}') in the response.", 
-                text, 
-                0
-            )
-            
-    except json.JSONDecodeError as e:
-        print(f"--- ERROR during JSON extraction ---", file=sys.stderr)
-        print(f"Failed to parse text: {text}", file=sys.stderr)
-        print(f"Error details: {e}", file=sys.stderr)
-        print(f"-------------------------------------", file=sys.stderr)
-        # Re-raise the exception to be caught by the main loop's try/except
-        raise e
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("Response is empty or not a string")
 
+    try:
+        # Find the first line break
+        newline_index = text.find('\n')
+        
+        if newline_index == -1:
+            first_line = text.strip()
+            report = "[No report found]"
+        else:
+            first_line = text[:newline_index].strip()
+            report = text[newline_index+1:].strip()
+
+        # Parse the first line
+        key = "has_vulnerability:"
+        if not first_line.lower().startswith(key):
+            raise ValueError(f"Response missing '{key}' on the first line.")
+
+        bool_str = first_line[len(key):].strip().lower()
+        
+        has_vuln = False
+        if bool_str == 'true':
+            has_vuln = True
+        elif bool_str == 'false':
+            has_vuln = False
+        else:
+            raise ValueError(f"Invalid boolean value: '{bool_str}' found on first line.")
+
+        return {
+            "has_vulnerability": has_vuln,
+            "report": report
+        }
+
+    except Exception as e:
+        print(f"--- ERROR during Simple Verdict extraction ---", file=sys.stderr)
+        print(f"Failed to parse text: {text}", file=sys.stderr)
+        raise e # Re-raise to be caught by main loop
 
 def save_progress(progress_file, data):
     with open(progress_file, 'w') as f:
@@ -125,13 +135,13 @@ def evaluate_vulnerability_fix_dataset():
                     )
                     
                     # 2. PARSE THE JSON STRING (*** THIS IS THE FIX ***)
-                    verdict_vuln = extract_json_from_string(verdict_string)
+                    verdict_data = extract_simple_verdict_and_report(verdict_string)
+                    print(f"Report:\n{verdict_data['report']}") # Print the report
                     
-                    print(verdict_vuln)
-                    if verdict_vuln.get('has_vulnerability') is True:
+                    if verdict_data.get('has_vulnerability') is True:
                         tp += 1
                         print("Result: CORRECTLY detected vulnerability (TP)")
-                    elif verdict_vuln.get('has_vulnerability') is False:
+                    elif verdict_data.get('has_vulnerability') is False:
                         fn += 1
                         print("Result: FAILED to detect vulnerability (FN)")
                     else:
@@ -169,13 +179,13 @@ def evaluate_vulnerability_fix_dataset():
                         input_code=vuln_code  # <-- ADD THIS
                     )
                     
-                    verdict_fixed = extract_json_from_string(verdict_string_fixed)
+                    verdict_data_fixed = extract_simple_verdict_and_report(verdict_string_fixed)
+                    print(f"Report:\n{verdict_data_fixed['report']}") # Print the report
                     
-                    # 3. Access the dictionary key
-                    if verdict_fixed.get('has_vulnerability') is True:
+                    if verdict_data_fixed.get('has_vulnerability') is True:
                         fp += 1
                         print("Result: INCORRECTLY detected vulnerability (FP)")
-                    elif verdict_fixed.get('has_vulnerability') is False:
+                    elif verdict_data_fixed.get('has_vulnerability') is False:
                         tn += 1
                         print("Result: CORRECTLY ignored safe code (TN)")
                     else:
