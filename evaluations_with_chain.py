@@ -18,18 +18,18 @@ def extract_json_from_string(text):
         raise json.JSONDecodeError("Input was not a string", str(text), 0)
         
     try:
-        # Znajdź pierwszą klamrę otwierającą
+        # Find the first opening brace
         start_index = text.find('{')
-        # Znajdź ostatnią klamrę zamykającą
+        # Find the last closing brace
         end_index = text.rfind('}')
         
         if start_index != -1 and end_index != -1 and end_index > start_index:
             json_string = text[start_index : end_index + 1]
             
-            # Spróbuj sparsować wyciągnięty podciąg
+            # Now, attempt to parse this extracted substring
             return json.loads(json_string)
         else:
-            # Jeśli nie znaleziono { lub }, to nie jest poprawny JSON
+            # If we couldn't find a { or }, it's not valid JSON
             raise json.JSONDecodeError(
                 "Could not find a valid JSON object block (missing '{' or '}') in the response.", 
                 text, 
@@ -41,7 +41,7 @@ def extract_json_from_string(text):
         print(f"Failed to parse text: {text}", file=sys.stderr)
         print(f"Error details: {e}", file=sys.stderr)
         print(f"-------------------------------------", file=sys.stderr)
-        # Rzuć wyjątek ponownie, aby został przechwycony przez główną pętlę try/except
+        # Re-raise the exception to be caught by the main loop's try/except
         raise e
 
 
@@ -62,7 +62,6 @@ def evaluate_vulnerability_fix_dataset():
     print("--- Initializing agents ---")
     print("--- Running in MULTI AGENT mode ---")
 
-    agents = CodeAgents()
 
     csv_file = "datasets/vulnerability_fix_dataset.csv"
     progress_file = "multi_agent_progress.json"
@@ -87,12 +86,6 @@ def evaluate_vulnerability_fix_dataset():
 
         csv_file = "datasets/vulnerability_fix_dataset.csv"
 
-        # Counters for our metrics
-        tp = 0  # True Positives
-        fp = 0  # False Positives
-        tn = 0  # True Negatives
-        fn = 0  # False Negatives
-
         try:
             df = pd.read_csv(csv_file)
 
@@ -103,7 +96,7 @@ def evaluate_vulnerability_fix_dataset():
             total_samples = len(df)
             print(f"--- Successfully loaded {total_samples} samples from {csv_file} ---")
 
-            for index, row in df.iterrows():
+            for index, row in df.iloc[start_index:].iterrows():
                 print(f"\n--- Processing Sample {index + 1} of {total_samples} ---")
 
                 # --- 1. Test the VULNERABLE code (Positive Test) ---
@@ -117,10 +110,18 @@ def evaluate_vulnerability_fix_dataset():
                 print(f"Analyzing vulnerable code for: {expected_vulnerability}")
                 verdict_string = "" # Initialize for error reporting
                 try:
+                    # 1. Generate context ONCE and store it
+                    context_summary_vuln = agents.analyze_code(vuln_code)
+
+                    vuln_list_string = agents.find_vulnerabilities(
+                        context_summary=context_summary_vuln,
+                        input_code=vuln_code  
+                    )
+
                     verdict_string = agents.verify_risk_and_fp(
-                        # Pass a modified string to help the placeholder distinguish
-                        vuln_list=agents.find_vulnerabilities(agents.analyze_code(f"vulnerable_code: {vuln_code}")),
-                        context_summary=None, 
+                        vuln_list=vuln_list_string,
+                        context_summary=context_summary_vuln,
+                        input_code=vuln_code  
                     )
                     
                     # 2. PARSE THE JSON STRING (*** THIS IS THE FIX ***)
@@ -130,19 +131,18 @@ def evaluate_vulnerability_fix_dataset():
                     if verdict_vuln.get('has_vulnerability') is True:
                         tp += 1
                         print("Result: CORRECTLY detected vulnerability (TP)")
-                    else:
+                    elif verdict_vuln.get('has_vulnerability') is False:
                         fn += 1
                         print("Result: FAILED to detect vulnerability (FN)")
+                    else:
+                        print("Parsed JSON did not contain a valid 'has_vulnerability' boolean value.")
 
                 except json.JSONDecodeError:
                     print(f"Error: Could not parse JSON response from agent: {verdict_string}", file=sys.stderr)
-                    fn += 1 # Count as a failure to detect
                 except KeyError:
                     print(f"Error: 'has_vulnerability' key missing from agent response: {verdict_string}", file=sys.stderr)
-                    fn += 1 # Count as a failure to detect
                 except Exception as e:
                     print(f"An unknown error occurred during vuln analysis: {e}", file=sys.stderr)
-                    fn += 1 # Count as a failure to detect
 
                 # --- 2. Test the FIXED code (Negative Test / FP Test) ---
                 fixed_code = row['fixed_code']
@@ -155,23 +155,32 @@ def evaluate_vulnerability_fix_dataset():
                 verdict_string_fixed = "" # Initialize for error reporting
                 try:
                     # Run agents on fixed code
-                    verdict_string_fixed = agents.verify_risk_and_fp(
-                        # Pass a modified string to help the placeholder distinguish
-                        vuln_list=agents.find_vulnerabilities(agents.analyze_code(f"fixed_code: {fixed_code}")),
-                        context_summary=None,
+                    # 1. Generate context ONCE and store it
+                    context_summary_vuln = agents.analyze_code(vuln_code)
+
+                    vuln_list_string = agents.find_vulnerabilities(
+                        context_summary=context_summary_vuln,
+                        input_code=vuln_code  # <-- ADD THIS
+                    )
+
+                    verdict_string = agents.verify_risk_and_fp(
+                        vuln_list=vuln_list_string,
+                        context_summary=context_summary_vuln,
+                        input_code=vuln_code  # <-- ADD THIS
                     )
                     
-                    # 2. PARSE THE JSON STRING (*** THIS IS THE FIX ***)
                     verdict_fixed = extract_json_from_string(verdict_string_fixed)
                     
                     # 3. Access the dictionary key
                     if verdict_fixed.get('has_vulnerability') is True:
                         fp += 1
                         print("Result: INCORRECTLY detected vulnerability (FP)")
-                    else:
+                    elif verdict_fixed.get('has_vulnerability') is False:
                         tn += 1
                         print("Result: CORRECTLY ignored safe code (TN)")
-                        
+                    else:
+                        print("Parsed JSON did not contain a valid 'has_vulnerability' boolean value.")    
+
                 except json.JSONDecodeError:
                     print(f"Error: Could not parse JSON response from agent: {verdict_string_fixed}", file=sys.stderr)
                 except KeyError:

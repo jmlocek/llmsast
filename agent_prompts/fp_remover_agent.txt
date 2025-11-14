@@ -8,10 +8,10 @@ GOAL:
 - Your response MUST be in JSON format and contain TWO keys:
 
 
-
 INPUTS:
 - A list of potential vulnerabilities from previous agent.
 - The code context summary from first Agent.
+- The full Source Code (use this to find concrete evidence).
 
 
 OUTPUT (English):
@@ -26,7 +26,7 @@ OUTPUT (English):
 - Example response when something is found:
     {{
     "has_vulnerability": true,
-    "report": "Analysis complete. Identified 1 confirmed vulnerability and 1 inconclusive issue:\n\n* **Confirmed Vulnerability (High Risk):** SQL Injection. **File:** 'user_db.py', **Line:** 25. The `user_id` parameter is directly concatenated into an f-string query, which allows for an attack.\n* **Rejected (False Positive):** Cross-Site Scripting (XSS). **File:** 'template.html', **Line:** 10. The user-provided content is rendered using a template engine that correctly escapes all output by default."
+    "report": "Analysis complete. Identified 1 confirmed vulnerability:\n\n* **Confirmed Vulnerability (High Risk):** SQL Injection. **Evidence:** The `user_id` parameter is directly used in an f-string: `f\"SELECT * FROM users WHERE id = {user_id}\"`."
     }}
 - Example response when nothing is found:
     {{

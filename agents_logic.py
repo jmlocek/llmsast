@@ -1,5 +1,6 @@
 import os
 import sys
+import requests
 from dataclasses import dataclass
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -45,11 +46,14 @@ class CodeAgents:
             human_template="Here is the source code to analyze:\n\n```{input_code}```",
         )
 
+# In agents_logic.py
+
         self._vuln_chain = self._make_chain(
             system_prompt=SYSTEM_PROMPT_VULN,
             human_template=(
                 "Based on the following inputs, identify potential vulnerabilities:\n\n"
                 "Code Context Summary:\n{context_summary}\n\n"
+                "Source Code:\n```{input_code}```\n\n"  # <-- ADD THIS
             ),
         )
 
@@ -59,6 +63,7 @@ class CodeAgents:
                 "Critically evaluate the following potential vulnerabilities:\n\n"
                 "Vulnerabilities List:\n{vuln_list}\n\n"
                 "Code Context Summary:\n{context_summary}\n\n"
+                "Source Code:\n```{input_code}```\n\n"  # <-- ADD THIS
             ),
         )
 
@@ -68,18 +73,18 @@ class CodeAgents:
         )
 
     def _make_chain(self, *, system_prompt: str, human_template: str):
+        # Nested function for the LLM call
         def local_llm_call(prompt: str) -> str:
-            import requests
             try:
                 response = requests.post(
-                    url="http://10.147.18.100:1234/v1/chat/completions",
+                    url=f"{self._config.base_url}/chat/completions", # Use base_url
                     headers={"Content-Type": "application/json"},
                     json={
-                        "model": "ibm/granite-4-h-tiny",
+                        "model": self._config.model,
                         "messages": [{"role": "user", "content": prompt}],
                         "temperature": self._config.temperature,
                     },
-                    timeout=30,
+                    timeout=320, # Keep your long timeout
                 )
                 response.raise_for_status()
                 return response.json()["choices"][0]["message"]["content"]
@@ -104,21 +109,23 @@ class CodeAgents:
         return self._context_chain.invoke({"input_code": input_code})
     
     def find_vulnerabilities(
-        self, context_summary: str) -> str:
-        """Zwraca listę potencjalnych luk bezpieczeństwa na podstawie podsumowań i diffu."""
-        return self._vuln_chain.invoke(
-            {
-                "context_summary": context_summary,
-            }
-        )
+            self, context_summary: str, input_code: str ) -> str:
+            """Zwraca listę potencjalnych luk bezpieczeństwa."""
+            return self._vuln_chain.invoke(
+                {
+                    "context_summary": context_summary,
+                    "input_code": input_code 
+                }
+            )
 
-    def verify_risk_and_fp(self, *, vuln_list: str, context_summary: str) -> str:
-        """Uruchamia Weryfikatora Ryzyka i Fałszywych Pozytywów (Agent 3).
-        Przyjmuje wynik Agenta 2 plus kontekst i zwraca przefiltrowaną ocenę."""
-        return self._risk_fp_chain.invoke({
-        "vuln_list": vuln_list,
-        "context_summary": context_summary,        }
-    )
+    def verify_risk_and_fp(
+            self, *, vuln_list: str, context_summary: str, input_code: str) -> str:
+            """Uruchamia Weryfikatora Ryzyka i Fałszywych Pozytywów (Agent 3)."""
+            return self._risk_fp_chain.invoke({
+                "vuln_list": vuln_list,
+                "context_summary": context_summary,
+                "input_code": input_code # <-- THIS IS THE FIX
+            })
 
     def analyze_code_single(self, input_code: str) -> str:
         """Uruchamia pojedynczego agenta do analizy kodu."""
