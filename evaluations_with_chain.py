@@ -111,15 +111,15 @@ def evaluate_vulnerability_fix_dataset():
 
                 # --- 1. Test the VULNERABLE code (Positive Test) ---
                 vuln_code = row['vulnerable_code']
-                expected_vulnerability = row.get('vulnerability_type', 'N/A') # Use .get() for safety
 
                 if not isinstance(vuln_code, str) or not vuln_code.strip():
                     print(f"Skipping row {index + 1} (no vulnerable code found)")
                     continue
 
-                print(f"Analyzing vulnerable code for: {expected_vulnerability}")
                 verdict_string = "" # Initialize for error reporting
                 try:
+                    print("Analyzing vuln code (expecting vulnerability)...")
+
                     # 1. Generate context ONCE and store it
                     context_summary_vuln = agents.analyze_code(vuln_code)
 
@@ -134,9 +134,7 @@ def evaluate_vulnerability_fix_dataset():
                         input_code=vuln_code  
                     )
                     
-                    # 2. PARSE THE JSON STRING (*** THIS IS THE FIX ***)
                     verdict_data = extract_simple_verdict_and_report(verdict_string)
-                    print(f"Report:\n{verdict_data['report']}") # Print the report
                     
                     if verdict_data.get('has_vulnerability') is True:
                         tp += 1
@@ -166,21 +164,20 @@ def evaluate_vulnerability_fix_dataset():
                 try:
                     # Run agents on fixed code
                     # 1. Generate context ONCE and store it
-                    context_summary_vuln = agents.analyze_code(vuln_code)
+                    context_summary_fixed = agents.analyze_code(fixed_code)
 
                     vuln_list_string = agents.find_vulnerabilities(
-                        context_summary=context_summary_vuln,
-                        input_code=vuln_code  # <-- ADD THIS
+                        context_summary=context_summary_fixed,
+                        input_code=fixed_code  # <-- ADD THIS
                     )
 
-                    verdict_string = agents.verify_risk_and_fp(
+                    verdict_string_fixed = agents.verify_risk_and_fp(
                         vuln_list=vuln_list_string,
-                        context_summary=context_summary_vuln,
-                        input_code=vuln_code  # <-- ADD THIS
+                        context_summary=context_summary_fixed,
+                        input_code=fixed_code  # <-- ADD THIS
                     )
                     
                     verdict_data_fixed = extract_simple_verdict_and_report(verdict_string_fixed)
-                    print(f"Report:\n{verdict_data_fixed['report']}") # Print the report
                     
                     if verdict_data_fixed.get('has_vulnerability') is True:
                         fp += 1

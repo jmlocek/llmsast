@@ -84,7 +84,7 @@ class CodeAgents:
                         "messages": [{"role": "user", "content": prompt}],
                         "temperature": self._config.temperature,
                     },
-                    timeout=320, # Keep your long timeout
+                    timeout=600, # Keep your long timeout
                 )
                 response.raise_for_status()
                 return response.json()["choices"][0]["message"]["content"]
