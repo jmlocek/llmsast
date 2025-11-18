@@ -24,6 +24,7 @@ def load_prompt_from_file(filename: str) -> str:
         sys.exit(1)
 
 SYSTEM_PROMPT_ONLY_ONE_AGENT = load_prompt_from_file("single_agent.txt")
+SYSTEM_PROMPT_ONLY_ONE_AGENT_BAD = load_prompt_from_file("single_agent_bad.txt")
 SYSTEM_PROMPT_CONTEXT = load_prompt_from_file("context_agent.txt")
 SYSTEM_PROMPT_VULN = load_prompt_from_file("vuln_hunter_agent.txt")
 SYSTEM_PROMPT_RISK_FP = load_prompt_from_file("fp_remover_agent.txt")
