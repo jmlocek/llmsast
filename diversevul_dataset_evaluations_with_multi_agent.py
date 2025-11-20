@@ -1,7 +1,10 @@
 import json
 import sys
 import os
-from agents_logic import CodeAgents, AgentConfig
+from agents_logic import CodeAgents
+
+# Maximum number of samples to evaluate for each category
+MAX_SAMPLES = 1100
 
 def extract_simple_verdict_and_report(text: str) -> dict:
     """
@@ -50,25 +53,24 @@ def extract_simple_verdict_and_report(text: str) -> dict:
         raise e
 
 def save_progress(progress_file, data):
+    """Save progress to JSON file"""
     with open(progress_file, 'w') as f:
         json.dump(data, f)
 
 def load_progress(progress_file):
+    """Load progress from JSON file"""
     if os.path.exists(progress_file):
         with open(progress_file, 'r') as f:
             return json.load(f)
     return None
 
-# Limit to first 1100 samples of each type
-MAX_SAMPLES = 1100
-
 def evaluate_diversevul_dataset():
     """
-    Evaluates the DiverseVul dataset in SINGLE AGENT mode.
-    Splits vulnerable and non-vulnerable functions and tests them one by one.
+    Evaluates the DiverseVul dataset using MULTI AGENT mode.
+    Alternates between vulnerable and safe samples (1 vuln, 1 safe, 1 vuln, 1 safe, etc.)
     """
     json_file = "datasets/diversevul_20230702.json"
-    progress_file = "diversevul_single_agent_progress.json"
+    progress_file = "diversevul_multi_agent_progress.json"
 
     # Load progress if available
     progress = load_progress(progress_file)
@@ -86,7 +88,7 @@ def evaluate_diversevul_dataset():
 
     try:
         print("--- Initializing agents ---")
-        print("--- Running in SINGLE AGENT mode ---")
+        print("--- Running in MULTI AGENT mode ---")
         agents = CodeAgents()
 
         # Load and split the dataset
@@ -179,8 +181,28 @@ def evaluate_diversevul_dataset():
                 continue
             
             try:
-                # Use single agent mode
-                verdict_string = agents.analyze_code_single(code)
+                # Use multi-agent mode with 3-step analysis
+                print("Running multi-agent analysis...")
+                
+                # Step 1: Analyze code context
+                print("  Step 1: Context Analysis...")
+                context_summary = agents.analyze_code(code)
+                
+                # Step 2: Find vulnerabilities
+                print("  Step 2: Vulnerability Detection...")
+                vuln_list_string = agents.find_vulnerabilities(
+                    context_summary=context_summary,
+                    input_code=code
+                )
+                
+                # Step 3: Verify and filter false positives
+                print("  Step 3: Risk Verification...")
+                verdict_string = agents.verify_risk_and_fp(
+                    vuln_list=vuln_list_string,
+                    context_summary=context_summary,
+                    input_code=code
+                )
+                
                 verdict_data = extract_simple_verdict_and_report(verdict_string)
                 
                 detected_vuln = verdict_data.get('has_vulnerability')
