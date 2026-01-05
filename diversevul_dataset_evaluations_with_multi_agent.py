@@ -1,7 +1,7 @@
 import json
 import sys
 import os
-from agents_logic import CodeAgents
+from agents_logic_old import CodeAgents
 
 # Maximum number of samples to evaluate for each category
 MAX_SAMPLES = 1100

@@ -34,8 +34,7 @@ SYSTEM_PROMPT_RISK_FP = load_prompt_from_file("fp_remover_agent.txt")
 class AgentConfig:
     model: str = "gpt-oss-20b"
     temperature: float = 0.2
-    base_url: str = "https://10.147.18.200:1234/v1" 
-    api_key: str = "Bearer LLM-d64e948d09da25743c81c61b2aeeb9f9c17f267145cd5bab209ecbe3f231a462"
+    base_url: str = "http://10.147.18.100:1234/v1" 
 
 class CodeAgents:
     def __init__(self, config: AgentConfig | None = None) -> None:
@@ -77,20 +76,8 @@ class CodeAgents:
         # Nested function for the LLM call
         def local_llm_call(prompt: str) -> str:
             try:
-                headers = {
-                    "Content-Type": "application/json",
-                    # We check if 'Bearer' is already in the key to be safe, 
-                    # otherwise we format it correctly.
-                    "Authorization": (
-                        self._config.api_key 
-                        if self._config.api_key.startswith("Bearer") 
-                        else f"Bearer {self._config.api_key}"
-                    )
-                }
-
                 response = requests.post(
                     url=f"{self._config.base_url}/chat/completions",
-                    headers=headers,  # <--- Pass the updated headers here
                     json={
                         "model": self._config.model,
                         "messages": [{"role": "system", "content": system_prompt}, # Note: Added system prompt to messages
@@ -98,7 +85,6 @@ class CodeAgents:
                         "temperature": self._config.temperature,
                     },
                     timeout=600,
-                    verify=False
                 )
                 response.raise_for_status()
                 return response.json()["choices"][0]["message"]["content"]

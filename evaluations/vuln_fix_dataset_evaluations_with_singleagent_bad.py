@@ -2,7 +2,7 @@ import pandas as pd
 import sys
 import json
 import os
-from agents_logic import CodeAgents, AgentConfig
+from agents_logic_old import CodeAgents, AgentConfig
 
 def extract_simple_verdict_and_report(text: str) -> dict:
     """

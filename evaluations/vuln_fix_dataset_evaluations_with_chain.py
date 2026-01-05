@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from agents_logic import CodeAgents, AgentConfig
+from agents_logic_old import CodeAgents, AgentConfig
 
 def extract_simple_verdict_and_report(text: str) -> dict:
     """
