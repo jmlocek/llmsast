@@ -3,3 +3,7 @@ python-dotenv
 langchain-google-genai
 langchain-core
 requests
+qdrant-client
+openai
+httpx
+tqdm

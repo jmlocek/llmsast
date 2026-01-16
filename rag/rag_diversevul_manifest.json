@@ -1,0 +1,12 @@
+{
+  "created_at": "2026-01-16T11:29:11.410996Z",
+  "input_file": ".\\datasets\\diversevul_20230702.json",
+  "total_records_in_file": 330492,
+  "rag_size_requested": 10,
+  "records_indexed": 10,
+  "records_skipped": 0,
+  "collection_name": "diversevul_kb",
+  "split_method": "tail (ostatnie N rekordów w kolejności pliku)",
+  "embedding_model": "text-embedding-nomic-embed-text-v1.5",
+  "vector_size": 768
+}
