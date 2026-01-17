@@ -1,0 +1,19 @@
+
+============================================================
+  TWORZENIE BAZY RAG - DiverseVul -> Qdrant
+============================================================
+
+[Init] Łączenie z Qdrant: http://localhost:6333 ...
+[Init] Połączono z Qdrant.
+[Init] Embedding endpoint: https://10.147.18.200:1234/v1
+[Init] Embedding model: text-embedding-nomic-embed-text-v1.5
+[Init] Expected vector size: 768
+[Validation] Sprawdzanie modelu embeddingów...
+[Validation] OK – wektor ma 768 wymiarów.
+[Data] Zliczanie rekordów w .\datasets\diversevul_20230702.json...
+[Data] Plik zawiera 330492 rekordów.
+[Data] Wczytano 20000 rekordów do RAG (tail).
+[Qdrant] Usuwanie istniejącej kolekcji 'diversevul_kb'...
+[Qdrant] Tworzenie kolekcji 'diversevul_kb' (size=768, distance=COSINE)...
+
+[Indexing] Indeksowanie 20000 rekordow (batch=50)...
