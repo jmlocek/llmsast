@@ -32,7 +32,7 @@ SYSTEM_PROMPT_RISK_FP = load_prompt_from_file("fp_remover_agent.txt")
 
 @dataclass(frozen=True)
 class AgentConfig:
-    model: str = "gpt-oss-20b"
+    model: str = "gpt-oss-120b"
     temperature: float = 0.2
     base_url: str = "https://10.147.18.200:1234/v1" 
     api_key: str = "Bearer LLM-d64e948d09da25743c81c61b2aeeb9f9c17f267145cd5bab209ecbe3f231a462"
