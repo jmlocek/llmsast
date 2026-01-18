@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """
-diversevul_dataset_evaluations_with_single_agent_rag.py
+diversevul_dataset_evaluations_with_multi_agent_rag.py
 
-Evaluation script for DiverseVul dataset using SINGLE AGENT mode + RAG.
+Evaluation script for DiverseVul dataset using MULTI AGENT mode + RAG.
+RAG context is injected into:
+  - Vulnerability Hunter agent (Step 2)
+  - FP Remover / Risk Verifier agent (Step 3)
+
 For each sample, retrieves 1 nearest VULNERABLE + 1 nearest SAFE example
-from Qdrant and attaches them to the prompt (balanced context).
+from Qdrant and attaches them to the prompts for agents 2 and 3.
 """
 
 import argparse
@@ -45,7 +49,7 @@ QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "diversevul_kb")
 
 # Evaluation defaults
 DEFAULT_JSON_FILE = "datasets/diversevul_20230702.json"
-DEFAULT_PROGRESS_FILE = "diversevul_single_agent_rag_progress.json"
+DEFAULT_PROGRESS_FILE = "diversevul_multi_agent_rag_progress.json"
 DEFAULT_RAG_TRAIN_IDS_FILE = "rag/rag_train_ids.json"
 MAX_SAMPLES = 1100
 
@@ -161,13 +165,7 @@ def qdrant_vector_search(
     limit: int,
     with_payload: bool = True,
 ):
-    """Compatibility wrapper across qdrant-client versions.
-
-    - Older versions exposed `QdrantClient.search(...)`.
-    - Newer versions (e.g. 1.16.x) expose `QdrantClient.query_points(...)`.
-    Returns a list of scored points.
-    """
-
+    """Compatibility wrapper across qdrant-client versions."""
     if hasattr(qdrant, "search"):
         return qdrant.search(
             collection_name=collection_name,
@@ -200,7 +198,7 @@ def retrieve_balanced_context(
 ) -> str:
     """
     Retrieves 1 nearest VULNERABLE example + 1 nearest SAFE example from Qdrant.
-    Uses filter on payload field `is_vulnerable` (or `target`).
+    Uses filter on payload field `is_vulnerable`.
     """
     query_vec = get_embedding(embed_client, code)
 
@@ -266,27 +264,47 @@ def retrieve_balanced_context(
     return "\n\n".join(parts)
 
 
-def build_augmented_input(code: str, rag_context: str) -> str:
+def build_rag_preamble_for_hunter(rag_context: str) -> str:
     """
-    Builds the augmented prompt with RAG context prepended.
+    Builds RAG preamble for the Vulnerability Hunter agent.
+    Emphasizes looking for real vulnerabilities despite similar safe examples.
     """
     if not rag_context:
-        return code
-
+        return ""
+    
     return (
-        "You are a security code reviewer. Below are two similar code examples from a knowledge base:\n"
-        "one is VULNERABLE and one is SAFE. Use them as reference to understand patterns, but\n"
-        "make your own judgment based on the actual code to analyze.\n\n"
+        "=== RAG CONTEXT (Reference Examples) ===\n"
+        "Below are similar code examples from a knowledge base. One is VULNERABLE and one is SAFE.\n"
+        "Use them to understand vulnerability patterns, but focus on finding REAL issues in the target code.\n"
+        "Do NOT assume the code is safe just because a similar safe example exists.\n\n"
         f"{rag_context}\n\n"
-        "=== CODE TO ANALYZE ===\n"
-        f"```c\n{code}\n```"
+        "=== END RAG CONTEXT ===\n\n"
+    )
+
+
+def build_rag_preamble_for_fp_remover(rag_context: str) -> str:
+    """
+    Builds RAG preamble for the FP Remover / Risk Verifier agent.
+    Helps distinguish real vulnerabilities from false positives.
+    """
+    if not rag_context:
+        return ""
+    
+    return (
+        "=== RAG CONTEXT (Reference Examples) ===\n"
+        "Below are similar code examples from a knowledge base. One is VULNERABLE and one is SAFE.\n"
+        "Use them to help distinguish real vulnerabilities from false positives.\n"
+        "Compare the vulnerability patterns - if the target code lacks the dangerous pattern, it may be a false positive.\n"
+        "If the target code matches the vulnerable pattern, confirm it as a real vulnerability.\n\n"
+        f"{rag_context}\n\n"
+        "=== END RAG CONTEXT ===\n\n"
     )
 
 
 # ---------------------------------------------------------------------------
 # MAIN EVALUATION
 # ---------------------------------------------------------------------------
-def evaluate_diversevul_dataset_with_rag(
+def evaluate_diversevul_dataset_with_multi_agent_rag(
     json_file: str,
     progress_file: str,
     rag_train_ids_file: str,
@@ -307,7 +325,7 @@ def evaluate_diversevul_dataset_with_rag(
         print("Starting fresh...")
 
     print("--- Initializing agents ---")
-    print("--- Running in SINGLE AGENT + RAG mode ---")
+    print("--- Running in MULTI AGENT + RAG mode ---")
     agents = CodeAgents()
 
     print("--- Initializing RAG (Qdrant + Embeddings) ---")
@@ -398,13 +416,36 @@ def evaluate_diversevul_dataset_with_rag(
 
         try:
             # Retrieve balanced RAG context (1 vulnerable + 1 safe)
+            print("  Retrieving RAG context...")
             rag_context = retrieve_balanced_context(qdrant, embed_client, code)
-            augmented_input = build_augmented_input(code, rag_context)
+            
+            # Build RAG preamble for FP Remover only (Hunter works without RAG to avoid FP boost)
+            rag_preamble_fp = build_rag_preamble_for_fp_remover(rag_context)
 
-            # Use single agent mode with augmented input
-            verdict_string = agents.analyze_code_single(augmented_input)
+            # ===== MULTI-AGENT PIPELINE =====
+            
+            # Step 1: Context Analysis (no RAG - just understands the code)
+            print("  Step 1: Context Analysis...")
+            context_summary = agents.analyze_code(code)
+
+            # Step 2: Vulnerability Detection (NO RAG - pure detection, avoids FP inflation)
+            print("  Step 2: Vulnerability Detection...")
+            vuln_list_string = agents.find_vulnerabilities(
+                context_summary=context_summary,
+                input_code=code,
+            )
+
+            # Step 3: Risk Verification / FP Removal (WITH RAG)
+            print("  Step 3: Risk Verification (with RAG)...")
+            # Prepend RAG context to the input code for the FP remover
+            augmented_code_for_fp = rag_preamble_fp + f"=== CODE TO ANALYZE ===\n```c\n{code}\n```"
+            verdict_string = agents.verify_risk_and_fp(
+                vuln_list=vuln_list_string,
+                context_summary=context_summary,
+                input_code=augmented_code_for_fp,
+            )
+
             verdict_data = extract_simple_verdict_and_report(verdict_string)
-
             detected_vuln = verdict_data.get("has_vulnerability")
 
             if is_vulnerable:
@@ -471,7 +512,7 @@ def evaluate_diversevul_dataset_with_rag(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Evaluate DiverseVul with SINGLE AGENT + RAG (balanced: 1 vuln + 1 safe per query)"
+        description="Evaluate DiverseVul with MULTI AGENT + RAG (RAG injected into Hunter & FP Remover)"
     )
     parser.add_argument("--json-file", default=DEFAULT_JSON_FILE)
     parser.add_argument("--progress-file", default=DEFAULT_PROGRESS_FILE)
@@ -479,7 +520,7 @@ def main() -> None:
     parser.add_argument("--max-samples", type=int, default=MAX_SAMPLES, help="Per class (vuln and safe)")
     args = parser.parse_args()
 
-    evaluate_diversevul_dataset_with_rag(
+    evaluate_diversevul_dataset_with_multi_agent_rag(
         json_file=args.json_file,
         progress_file=args.progress_file,
         rag_train_ids_file=args.rag_train_ids_file,

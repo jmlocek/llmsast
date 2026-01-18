@@ -1,9 +1,13 @@
 import os
 import sys
 import requests
+import urllib3
 from dataclasses import dataclass
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 script_path = os.path.realpath(__file__)
