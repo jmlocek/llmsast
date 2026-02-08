@@ -1,7 +1,7 @@
 {
-  "tp": 107,
-  "fp": 99,
-  "tn": 215,
-  "fn": 120,
-  "current_index": 867
+  "tp": 21,
+  "fp": 20,
+  "tn": 22,
+  "fn": 12,
+  "current_index": 95
 }

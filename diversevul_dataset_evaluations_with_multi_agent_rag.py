@@ -419,7 +419,8 @@ def evaluate_diversevul_dataset_with_multi_agent_rag(
             print("  Retrieving RAG context...")
             rag_context = retrieve_balanced_context(qdrant, embed_client, code)
             
-            # Build RAG preamble for FP Remover only (Hunter works without RAG to avoid FP boost)
+            # Build RAG preambles for both Hunter and FP Remover
+            rag_preamble_hunter = build_rag_preamble_for_hunter(rag_context)
             rag_preamble_fp = build_rag_preamble_for_fp_remover(rag_context)
 
             # ===== MULTI-AGENT PIPELINE =====
@@ -428,11 +429,12 @@ def evaluate_diversevul_dataset_with_multi_agent_rag(
             print("  Step 1: Context Analysis...")
             context_summary = agents.analyze_code(code)
 
-            # Step 2: Vulnerability Detection (NO RAG - pure detection, avoids FP inflation)
-            print("  Step 2: Vulnerability Detection...")
+            # Step 2: Vulnerability Detection (WITH RAG)
+            print("  Step 2: Vulnerability Detection (with RAG)...")
+            augmented_code_for_hunter = rag_preamble_hunter + f"=== CODE TO ANALYZE ===\n```c\n{code}\n```"
             vuln_list_string = agents.find_vulnerabilities(
                 context_summary=context_summary,
-                input_code=code,
+                input_code=augmented_code_for_hunter,
             )
 
             # Step 3: Risk Verification / FP Removal (WITH RAG)
