@@ -49,26 +49,26 @@ def load_results(results_dir: str, exclude_ragonhunter: bool = False, exclude_al
         # GPT-OSS-20B
         'GPT-OSS-20B': {
             'Jeden agent': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_progress.json',
-            'Jeden agent + RAG': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_rag_progress.json',
+            'Jeden agent + RAG (FP Remover)': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_rag_progress.json',
             'Wiele agentów': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_progress.json',
-            'Wiele agentów + RAG': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_rag_progress.json',
-            'Wiele agentów + RAG (hunter)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_ragonhunter_progress.json',
+            'Wiele agentów + RAG (Hunter + FP Remover)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_rag_progress.json',
+            'Wiele agentów + RAG (Hunter)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_ragonhunter_progress.json',
         },
         # GPT-OSS-120B
         'GPT-OSS-120B': {
             'Jeden agent': 'gpt-oss-120b/diversevul_single_agent_progress.json',
-            'Jeden agent + RAG': 'gpt-oss-120b/diversevul_single_agent_rag_progress.json',
+            'Jeden agent + RAG (FP Remover)': 'gpt-oss-120b/diversevul_single_agent_rag_progress.json',
             'Wiele agentów': 'gpt-oss-120b/diversevul_multi_agent_progress.json',
-            'Wiele agentów + RAG': 'gpt-oss-120b/diversevul_multi_agent_rag_progress.json',
-            'Wiele agentów + RAG (hunter)': 'gpt-oss-120b/diversevul_multi_agent_ragonhunter_progress.json',
+            'Wiele agentów + RAG (Hunter + FP Remover)': 'gpt-oss-120b/diversevul_multi_agent_rag_progress.json',
+            'Wiele agentów + RAG (Hunter)': 'gpt-oss-120b/diversevul_multi_agent_ragonhunter_progress.json',
         },
         # Granite
         'Granite': {
             'Jeden agent': 'granite/diversevul_single_agent_progress.json',
-            'Jeden agent + RAG': 'granite/diversevul_single_agent_rag_progress .json',
+            'Jeden agent + RAG (FP Remover)': 'granite/diversevul_single_agent_rag_progress .json',
             'Wiele agentów': 'granite/diversevul_multi_agent_progress.json',
-            'Wiele agentów + RAG': 'granite/diversevul_multi_agent_rag_progress.json',
-            'Wiele agentów + RAG (hunter)': 'granite/diversevul_multi_agent_ragonhunter_progress.json',
+            'Wiele agentów + RAG (Hunter + FP Remover)': 'granite/diversevul_multi_agent_rag_progress.json',
+            'Wiele agentów + RAG (Hunter)': 'granite/diversevul_multi_agent_ragonhunter_progress.json',
         },
     }
     
@@ -78,8 +78,8 @@ def load_results(results_dir: str, exclude_ragonhunter: bool = False, exclude_al
             # Pomiń wszystkie konfiguracje z RAG jeśli flaga jest ustawiona
             if exclude_all_rag and 'RAG' in config_name:
                 continue
-            # Pomiń konfiguracje RAG (hunter) jeśli flaga jest ustawiona
-            if exclude_ragonhunter and 'RAG (hunter)' in config_name:
+            # Pomiń konfiguracje RAG (Hunter) - tylko Hunter jeśli flaga jest ustawiona
+            if exclude_ragonhunter and 'RAG (Hunter)' in config_name and 'FP Remover' not in config_name:
                 continue
             full_path = results_path / file_path
             if full_path.exists():
