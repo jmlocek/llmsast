@@ -1,0 +1,26 @@
+\begin{table}[htbp]
+\centering
+\caption{Wyniki ewaluacji modeli}
+\label{tab:wyniki}
+\begin{tabular}{llcccc}
+\toprule
+Model & Konfiguracja & Precyzja & Czułość & F1 & F2 \\
+\midrule
+GPT-OSS-20B & Jeden agent & 0.7417 & 0.1464 & 0.2445 & 0.1744 \\
+GPT-OSS-20B & Jeden agent + RAG & 0.7019 & 0.2626 & 0.3822 & 0.3002 \\
+GPT-OSS-20B & Wiele agentów & 0.5846 & 0.5939 & 0.5892 & 0.5920 \\
+GPT-OSS-20B & Wiele agentów + RAG & 0.5194 & 0.4714 & 0.4942 & 0.4803 \\
+GPT-OSS-20B & Wiele agentów + RAG (hunter) & 0.4630 & 0.6250 & 0.5319 & 0.5841 \\
+GPT-OSS-120B & Jeden agent & 0.5794 & 0.3125 & 0.4060 & 0.3442 \\
+GPT-OSS-120B & Jeden agent + RAG & 0.6858 & 0.2782 & 0.3958 & 0.3157 \\
+GPT-OSS-120B & Wiele agentów & 0.5323 & 0.6839 & 0.5986 & 0.6471 \\
+GPT-OSS-120B & Wiele agentów + RAG & 0.5742 & 0.6933 & 0.6281 & 0.6656 \\
+GPT-OSS-120B & Wiele agentów + RAG (hunter) & 0.5591 & 0.7536 & 0.6420 & 0.7046 \\
+Granite & Jeden agent & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+Granite & Jeden agent + RAG & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+Granite & Wiele agentów & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+Granite & Wiele agentów + RAG & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+Granite & Wiele agentów + RAG (hunter) & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}
