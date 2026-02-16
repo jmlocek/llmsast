@@ -45,30 +45,31 @@ def load_results(results_dir: str, exclude_ragonhunter: bool = False, exclude_al
     results_path = Path(results_dir)
     
     # Definicja struktury wyników
+    # Uwaga: kolejność kluczy odpowiada domyślnej kolejności modeli na wykresach.
     result_files = {
-        # GPT-OSS-20B
-        'GPT-OSS-20B': {
-            'Jeden agent': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_progress.json',
-            'Jeden agent + RAG (FP Remover)': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_rag_progress.json',
-            'Wiele agentów': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_progress.json',
-            'Wiele agentów + RAG (Hunter + FP Remover)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_rag_progress.json',
-            'Wiele agentów + RAG (Hunter)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_ragonhunter_progress.json',
+        # Granite-4h-Tiny
+        'Granite-4h-Tiny': {
+            'Podejście klasyczne': 'granite/diversevul_single_agent_progress.json',
+            'Podejście klasyczne + RAG (FP Remover)': 'granite/diversevul_single_agent_rag_progress .json',
+            'Podejście łańcuchowe': 'granite/diversevul_multi_agent_progress.json',
+            'Podejście łańcuchowe + RAG (Hunter + FP Remover)': 'granite/diversevul_multi_agent_rag_progress.json',
+            'Podejście łańcuchowe + RAG (Hunter)': 'granite/diversevul_multi_agent_ragonhunter_progress.json',
         },
-        # GPT-OSS-120B
-        'GPT-OSS-120B': {
-            'Jeden agent': 'gpt-oss-120b/diversevul_single_agent_progress.json',
-            'Jeden agent + RAG (FP Remover)': 'gpt-oss-120b/diversevul_single_agent_rag_progress.json',
-            'Wiele agentów': 'gpt-oss-120b/diversevul_multi_agent_progress.json',
-            'Wiele agentów + RAG (Hunter + FP Remover)': 'gpt-oss-120b/diversevul_multi_agent_rag_progress.json',
-            'Wiele agentów + RAG (Hunter)': 'gpt-oss-120b/diversevul_multi_agent_ragonhunter_progress.json',
+        # gpt-oss-20b
+        'gpt-oss-20b': {
+            'Podejście klasyczne': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_progress.json',
+            'Podejście klasyczne + RAG (FP Remover)': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_rag_progress.json',
+            'Podejście łańcuchowe': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_progress.json',
+            'Podejście łańcuchowe + RAG (Hunter + FP Remover)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_rag_progress.json',
+            'Podejście łańcuchowe + RAG (Hunter)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_ragonhunter_progress.json',
         },
-        # Granite
-        'Granite': {
-            'Jeden agent': 'granite/diversevul_single_agent_progress.json',
-            'Jeden agent + RAG (FP Remover)': 'granite/diversevul_single_agent_rag_progress .json',
-            'Wiele agentów': 'granite/diversevul_multi_agent_progress.json',
-            'Wiele agentów + RAG (Hunter + FP Remover)': 'granite/diversevul_multi_agent_rag_progress.json',
-            'Wiele agentów + RAG (Hunter)': 'granite/diversevul_multi_agent_ragonhunter_progress.json',
+        # gpt-oss-120b
+        'gpt-oss-120b': {
+            'Podejście klasyczne': 'gpt-oss-120b/diversevul_single_agent_progress.json',
+            'Podejście klasyczne + RAG (FP Remover)': 'gpt-oss-120b/diversevul_single_agent_rag_progress.json',
+            'Podejście łańcuchowe': 'gpt-oss-120b/diversevul_multi_agent_progress.json',
+            'Podejście łańcuchowe + RAG (Hunter + FP Remover)': 'gpt-oss-120b/diversevul_multi_agent_rag_progress.json',
+            'Podejście łańcuchowe + RAG (Hunter)': 'gpt-oss-120b/diversevul_multi_agent_ragonhunter_progress.json',
         },
     }
     
@@ -78,8 +79,8 @@ def load_results(results_dir: str, exclude_ragonhunter: bool = False, exclude_al
             # Pomiń wszystkie konfiguracje z RAG jeśli flaga jest ustawiona
             if exclude_all_rag and 'RAG' in config_name:
                 continue
-            # Pomiń konfiguracje RAG (Hunter) - tylko Hunter jeśli flaga jest ustawiona
-            if exclude_ragonhunter and 'RAG (Hunter)' in config_name and 'FP Remover' not in config_name:
+            # Pomiń konfiguracje RAG (Hunter) - tylko wariant "Hunter" bez "Hunter + FP Remover"
+            if exclude_ragonhunter and 'RAG (Hunter)' in config_name and 'Hunter + FP Remover' not in config_name:
                 continue
             full_path = results_path / file_path
             if full_path.exists():
@@ -90,6 +91,32 @@ def load_results(results_dir: str, exclude_ragonhunter: bool = False, exclude_al
                 print(f"Ostrzeżenie: Plik {full_path} nie istnieje")
     
     return results
+
+
+def get_models_and_approaches(results: dict):
+    """Zwraca listę modeli i podejść w spójnej kolejności."""
+    desired_models = ['Granite-4h-Tiny', 'gpt-oss-20b', 'gpt-oss-120b']
+    models = [m for m in desired_models if m in results]
+    for m in results.keys():
+        if m not in models:
+            models.append(m)
+    desired_order = [
+        'Podejście klasyczne',
+        'Podejście klasyczne + RAG (FP Remover)',
+        'Podejście łańcuchowe',
+        'Podejście łańcuchowe + RAG (Hunter + FP Remover)',
+        'Podejście łańcuchowe + RAG (Hunter)',
+    ]
+
+    present = set()
+    for _, configs in results.items():
+        present.update(configs.keys())
+
+    approaches = [name for name in desired_order if name in present]
+    if not approaches:
+        approaches = sorted(list(present))
+
+    return models, approaches
 
 
 def calculate_metrics(data: dict) -> dict:
@@ -149,62 +176,53 @@ def create_comparison_bar_chart(results: dict, metrics: list, output_path: str, 
         output_path: Ścieżka do zapisu wykresu
         title: Tytuł wykresu
     """
-    # Przygotowanie danych
-    all_configs = []
-    all_values = {metric: [] for metric in metrics}
-    
-    for model_name, configs in results.items():
-        for config_name, data in configs.items():
-            if data:  # Sprawdź czy dane istnieją
-                metrics_data = calculate_metrics(data)
-                label = f"{model_name}\n{config_name}"
-                all_configs.append(label)
-                for metric in metrics:
-                    all_values[metric].append(metrics_data[metric])
-    
-    if not all_configs:
+    # Wersja przeglądowa: siatka 2x2 (metryki) z osiami X = modele i legendą = podejścia
+    models, approaches = get_models_and_approaches(results)
+    if not models or not approaches:
         print("Brak danych do utworzenia wykresu")
         return
-    
-    # Tworzenie wykresu
-    x = np.arange(len(all_configs))
-    width = 0.2
-    multiplier = 0
-    
-    fig, ax = plt.subplots(figsize=(14, 8))
-    
-    # Kolory profesjonalne
-    colors = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D']
-    
-    for metric, color in zip(metrics, colors):
-        offset = width * multiplier
-        values = all_values[metric]
-        rects = ax.bar(x + offset, values, width, label=metric, color=color, edgecolor='black', linewidth=0.5)
-        
-        # Dodanie wartości na słupkach
-        for rect, value in zip(rects, values):
-            height = rect.get_height()
-            ax.annotate(f'{value:.2f}',
-                       xy=(rect.get_x() + rect.get_width() / 2, height),
-                       xytext=(0, 3),
-                       textcoords="offset points",
-                       ha='center', va='bottom', fontsize=8, rotation=0)
-        
-        multiplier += 1
-    
-    ax.set_ylabel('Wartość metryki')
-    ax.set_title(title)
-    ax.set_xticks(x + width * (len(metrics) - 1) / 2)
-    ax.set_xticklabels(all_configs, rotation=45, ha='right')
-    ax.legend(loc='upper right', framealpha=0.9)
-    ax.set_ylim(0, 1.15)
-    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
-    
-    plt.tight_layout()
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9), sharey=True)
+    axes = axes.flatten()
+
+    colors = plt.cm.Set2(np.linspace(0, 1, max(len(approaches), 1)))
+    x = np.arange(len(models))
+    width = min(0.18, 0.8 / max(len(approaches), 1))
+
+    for idx, metric in enumerate(metrics[:4]):
+        ax = axes[idx]
+        for j, (approach, color) in enumerate(zip(approaches, colors)):
+            values = []
+            for model in models:
+                data = results.get(model, {}).get(approach)
+                if data:
+                    values.append(calculate_metrics(data)[metric])
+                else:
+                    values.append(0)
+
+            offset = (j - (len(approaches) - 1) / 2) * width
+            ax.bar(x + offset, values, width, label=approach, color=color, edgecolor='black', linewidth=0.4)
+
+        ax.set_title(metric)
+        ax.set_xticks(x)
+        ax.set_xticklabels(models, rotation=0)
+        ax.set_ylim(0, 1.15)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+        ax.set_ylabel('Wartość metryki' if idx % 2 == 0 else '')
+
+    # Ukryj ewentualne nadmiarowe osie
+    for k in range(len(metrics[:4]), 4):
+        axes[k].axis('off')
+
+    fig.suptitle(title)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=min(len(approaches), 3), framealpha=0.9)
+
+    plt.tight_layout(rect=[0, 0.07, 1, 0.95])
     plt.savefig(output_path, format='png', bbox_inches='tight')
     plt.savefig(output_path.replace('.png', '.pdf'), format='pdf', bbox_inches='tight')
     plt.close()
-    
+
     print(f"Zapisano wykres: {output_path}")
 
 
@@ -218,58 +236,58 @@ def create_model_comparison_chart(results: dict, output_dir: str):
     """
     metrics_pl = ['Precyzja', 'Czułość', 'Wynik F1', 'Wynik F2']
     
+    models, approaches = get_models_and_approaches(results)
+    if not models or not approaches:
+        print("Brak danych do utworzenia wykresów")
+        return
+
+    colors = plt.cm.Set2(np.linspace(0, 1, max(len(approaches), 1)))
+    x = np.arange(len(models))
+    width = min(0.18, 0.8 / max(len(approaches), 1))
+
     for metric in metrics_pl:
         fig, ax = plt.subplots(figsize=(12, 7))
-        
-        # Przygotowanie danych dla każdego modelu
-        models = list(results.keys())
-        all_configs = set()
-        for model_name, configs in results.items():
-            all_configs.update(configs.keys())
-        all_configs = sorted(list(all_configs))
-        
-        x = np.arange(len(all_configs))
-        width = 0.25
-        colors = ['#2E86AB', '#A23B72', '#F18F01']
-        
-        for i, (model_name, color) in enumerate(zip(models, colors)):
+
+        for j, (approach, color) in enumerate(zip(approaches, colors)):
             values = []
-            for config in all_configs:
-                if config in results[model_name] and results[model_name][config]:
-                    metrics_data = calculate_metrics(results[model_name][config])
-                    values.append(metrics_data[metric])
+            present_mask = []
+            for model in models:
+                data = results.get(model, {}).get(approach)
+                if data:
+                    values.append(calculate_metrics(data)[metric])
+                    present_mask.append(True)
                 else:
                     values.append(0)
-            
-            offset = width * i
-            rects = ax.bar(x + offset, values, width, label=model_name, color=color, 
-                          edgecolor='black', linewidth=0.5)
-            
-            # Dodanie wartości na słupkach
-            for rect, value in zip(rects, values):
-                if value > 0:
+                    present_mask.append(False)
+
+            offset = (j - (len(approaches) - 1) / 2) * width
+            rects = ax.bar(x + offset, values, width, label=approach, color=color,
+                           edgecolor='black', linewidth=0.4)
+
+            for rect, value, is_present in zip(rects, values, present_mask):
+                if is_present:
                     height = rect.get_height()
                     ax.annotate(f'{value:.2f}',
-                               xy=(rect.get_x() + rect.get_width() / 2, height),
-                               xytext=(0, 3),
-                               textcoords="offset points",
-                               ha='center', va='bottom', fontsize=8)
-        
+                                xy=(rect.get_x() + rect.get_width() / 2, height),
+                                xytext=(0, 3),
+                                textcoords="offset points",
+                                ha='center', va='bottom', fontsize=8)
+
         ax.set_ylabel('Wartość metryki')
-        ax.set_title(f'Porównanie modeli - {metric}')
-        ax.set_xticks(x + width)
-        ax.set_xticklabels(all_configs, rotation=45, ha='right')
+        ax.set_title(f'Porównanie podejść dla modeli – {metric}')
+        ax.set_xticks(x)
+        ax.set_xticklabels(models)
         ax.legend(loc='upper right', framealpha=0.9)
         ax.set_ylim(0, 1.15)
         ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
-        
+
         plt.tight_layout()
-        
+
         output_path = os.path.join(output_dir, f'porownanie_{metric.lower().replace(" ", "_")}.png')
         plt.savefig(output_path, format='png', bbox_inches='tight')
         plt.savefig(output_path.replace('.png', '.pdf'), format='pdf', bbox_inches='tight')
         plt.close()
-        
+
         print(f"Zapisano wykres: {output_path}")
 
 
@@ -393,64 +411,58 @@ def create_grouped_metrics_chart(results: dict, output_dir: str):
         results: Słownik z wynikami
         output_dir: Folder do zapisu wykresów
     """
+    # Wykres podsumowujący: średnia z (Precyzja, Czułość, F1, F2) per model i podejście
     metrics = ['Precyzja', 'Czułość', 'Wynik F1', 'Wynik F2']
-    
-    # Przygotowanie danych
-    labels = []
-    data = {metric: [] for metric in metrics}
-    
-    for model_name, configs in results.items():
-        for config_name, raw_data in configs.items():
-            if raw_data:
-                metrics_data = calculate_metrics(raw_data)
-                labels.append(f"{model_name}\n{config_name}")
-                for metric in metrics:
-                    data[metric].append(metrics_data[metric])
-    
-    if not labels:
+    models, approaches = get_models_and_approaches(results)
+    if not models or not approaches:
         print("Brak danych do utworzenia wykresu")
         return
-    
-    x = np.arange(len(labels))
-    width = 0.2
-    
-    fig, ax = plt.subplots(figsize=(16, 9))
-    
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-    
-    for i, (metric, color) in enumerate(zip(metrics, colors)):
-        offset = (i - 1.5) * width
-        rects = ax.bar(x + offset, data[metric], width, label=metric, color=color,
-                      edgecolor='black', linewidth=0.5)
-        
-        for rect in rects:
-            height = rect.get_height()
-            if height > 0:
-                ax.annotate(f'{height:.2f}',
-                           xy=(rect.get_x() + rect.get_width() / 2, height),
-                           xytext=(0, 3),
-                           textcoords="offset points",
-                           ha='center', va='bottom', fontsize=7, rotation=90)
-    
-    ax.set_ylabel('Wartość metryki')
-    ax.set_title('Porównanie metryk ewaluacyjnych dla wszystkich konfiguracji')
+
+    fig, ax = plt.subplots(figsize=(12, 7))
+    colors = plt.cm.Set2(np.linspace(0, 1, max(len(approaches), 1)))
+    x = np.arange(len(models))
+    width = min(0.18, 0.8 / max(len(approaches), 1))
+
+    for j, (approach, color) in enumerate(zip(approaches, colors)):
+        values = []
+        present_mask = []
+        for model in models:
+            raw = results.get(model, {}).get(approach)
+            if raw:
+                m = calculate_metrics(raw)
+                values.append(float(np.mean([m[k] for k in metrics])))
+                present_mask.append(True)
+            else:
+                values.append(0)
+                present_mask.append(False)
+
+        offset = (j - (len(approaches) - 1) / 2) * width
+        rects = ax.bar(x + offset, values, width, label=approach, color=color,
+                       edgecolor='black', linewidth=0.4)
+
+        for rect, value, is_present in zip(rects, values, present_mask):
+            if is_present:
+                ax.annotate(f'{value:.2f}',
+                            xy=(rect.get_x() + rect.get_width() / 2, rect.get_height()),
+                            xytext=(0, 3),
+                            textcoords="offset points",
+                            ha='center', va='bottom', fontsize=8)
+
+    ax.set_ylabel('Średnia wartość metryk')
+    ax.set_title('Średnia metryk (Precyzja, Czułość, F1, F2) – porównanie podejść per model')
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=9)
+    ax.set_xticklabels(models)
     ax.legend(loc='upper right', framealpha=0.9)
-    ax.set_ylim(0, 1.2)
+    ax.set_ylim(0, 1.15)
     ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
-    
-    # Dodanie linii siatki
-    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
-    ax.set_axisbelow(True)
-    
+
     plt.tight_layout()
-    
+
     output_path = os.path.join(output_dir, 'metryki_wszystkie_konfiguracje.png')
     plt.savefig(output_path, format='png', bbox_inches='tight')
     plt.savefig(output_path.replace('.png', '.pdf'), format='pdf', bbox_inches='tight')
     plt.close()
-    
+
     print(f"Zapisano wykres: {output_path}")
 
 
@@ -462,54 +474,63 @@ def create_f_scores_comparison(results: dict, output_dir: str):
         results: Słownik z wynikami
         output_dir: Folder do zapisu wykresów
     """
-    fig, ax = plt.subplots(figsize=(12, 7))
-    
-    labels = []
-    f1_scores = []
-    f2_scores = []
-    
-    for model_name, configs in results.items():
-        for config_name, data in configs.items():
-            if data:
-                metrics_data = calculate_metrics(data)
-                labels.append(f"{model_name}\n{config_name}")
-                f1_scores.append(metrics_data['Wynik F1'])
-                f2_scores.append(metrics_data['Wynik F2'])
-    
-    x = np.arange(len(labels))
-    width = 0.35
-    
-    rects1 = ax.bar(x - width/2, f1_scores, width, label='Wynik F1', color='#2E86AB', 
-                   edgecolor='black', linewidth=0.5)
-    rects2 = ax.bar(x + width/2, f2_scores, width, label='Wynik F2', color='#F18F01',
-                   edgecolor='black', linewidth=0.5)
-    
-    # Dodanie wartości
-    for rects in [rects1, rects2]:
-        for rect in rects:
-            height = rect.get_height()
-            if height > 0:
-                ax.annotate(f'{height:.2f}',
-                           xy=(rect.get_x() + rect.get_width() / 2, height),
-                           xytext=(0, 3),
-                           textcoords="offset points",
-                           ha='center', va='bottom', fontsize=9)
-    
-    ax.set_ylabel('Wartość metryki')
-    ax.set_title('Porównanie wyników F1 i F2 dla wszystkich konfiguracji')
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=45, ha='right')
-    ax.legend(loc='upper right', framealpha=0.9)
-    ax.set_ylim(0, 1.15)
-    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
-    
-    plt.tight_layout()
-    
+    models, approaches = get_models_and_approaches(results)
+    if not models or not approaches:
+        print("Brak danych do utworzenia wykresu")
+        return
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
+    colors = plt.cm.Set2(np.linspace(0, 1, max(len(approaches), 1)))
+    x = np.arange(len(models))
+    width = min(0.18, 0.8 / max(len(approaches), 1))
+
+    for ax, metric, title in zip(
+        axes,
+        ['Wynik F1', 'Wynik F2'],
+        ['Wynik F1', 'Wynik F2'],
+    ):
+        for j, (approach, color) in enumerate(zip(approaches, colors)):
+            values = []
+            present_mask = []
+            for model in models:
+                raw = results.get(model, {}).get(approach)
+                if raw:
+                    values.append(calculate_metrics(raw)[metric])
+                    present_mask.append(True)
+                else:
+                    values.append(0)
+                    present_mask.append(False)
+
+            offset = (j - (len(approaches) - 1) / 2) * width
+            rects = ax.bar(x + offset, values, width, label=approach, color=color,
+                           edgecolor='black', linewidth=0.4)
+
+            for rect, value, is_present in zip(rects, values, present_mask):
+                if is_present:
+                    ax.annotate(f'{value:.2f}',
+                                xy=(rect.get_x() + rect.get_width() / 2, rect.get_height()),
+                                xytext=(0, 3),
+                                textcoords="offset points",
+                                ha='center', va='bottom', fontsize=8)
+
+        ax.set_title(title)
+        ax.set_xticks(x)
+        ax.set_xticklabels(models)
+        ax.set_ylim(0, 1.15)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+
+    axes[0].set_ylabel('Wartość metryki')
+    fig.suptitle('Porównanie wyników F1 i F2 – podejścia per model')
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=min(len(approaches), 3), framealpha=0.9)
+
+    plt.tight_layout(rect=[0, 0.08, 1, 0.92])
+
     output_path = os.path.join(output_dir, 'porownanie_f1_f2.png')
     plt.savefig(output_path, format='png', bbox_inches='tight')
     plt.savefig(output_path.replace('.png', '.pdf'), format='pdf', bbox_inches='tight')
     plt.close()
-    
+
     print(f"Zapisano wykres: {output_path}")
 
 
@@ -521,54 +542,63 @@ def create_precision_recall_chart(results: dict, output_dir: str):
         results: Słownik z wynikami
         output_dir: Folder do zapisu wykresów
     """
-    fig, ax = plt.subplots(figsize=(12, 7))
-    
-    labels = []
-    precision_scores = []
-    recall_scores = []
-    
-    for model_name, configs in results.items():
-        for config_name, data in configs.items():
-            if data:
-                metrics_data = calculate_metrics(data)
-                labels.append(f"{model_name}\n{config_name}")
-                precision_scores.append(metrics_data['Precyzja'])
-                recall_scores.append(metrics_data['Czułość'])
-    
-    x = np.arange(len(labels))
-    width = 0.35
-    
-    rects1 = ax.bar(x - width/2, precision_scores, width, label='Precyzja', color='#2ca02c',
-                   edgecolor='black', linewidth=0.5)
-    rects2 = ax.bar(x + width/2, recall_scores, width, label='Czułość', color='#d62728',
-                   edgecolor='black', linewidth=0.5)
-    
-    # Dodanie wartości
-    for rects in [rects1, rects2]:
-        for rect in rects:
-            height = rect.get_height()
-            if height > 0:
-                ax.annotate(f'{height:.2f}',
-                           xy=(rect.get_x() + rect.get_width() / 2, height),
-                           xytext=(0, 3),
-                           textcoords="offset points",
-                           ha='center', va='bottom', fontsize=9)
-    
-    ax.set_ylabel('Wartość metryki')
-    ax.set_title('Porównanie precyzji i czułości dla wszystkich konfiguracji')
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=45, ha='right')
-    ax.legend(loc='upper right', framealpha=0.9)
-    ax.set_ylim(0, 1.15)
-    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
-    
-    plt.tight_layout()
-    
+    models, approaches = get_models_and_approaches(results)
+    if not models or not approaches:
+        print("Brak danych do utworzenia wykresu")
+        return
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
+    colors = plt.cm.Set2(np.linspace(0, 1, max(len(approaches), 1)))
+    x = np.arange(len(models))
+    width = min(0.18, 0.8 / max(len(approaches), 1))
+
+    for ax, metric, title in zip(
+        axes,
+        ['Precyzja', 'Czułość'],
+        ['Precyzja', 'Czułość'],
+    ):
+        for j, (approach, color) in enumerate(zip(approaches, colors)):
+            values = []
+            present_mask = []
+            for model in models:
+                raw = results.get(model, {}).get(approach)
+                if raw:
+                    values.append(calculate_metrics(raw)[metric])
+                    present_mask.append(True)
+                else:
+                    values.append(0)
+                    present_mask.append(False)
+
+            offset = (j - (len(approaches) - 1) / 2) * width
+            rects = ax.bar(x + offset, values, width, label=approach, color=color,
+                           edgecolor='black', linewidth=0.4)
+
+            for rect, value, is_present in zip(rects, values, present_mask):
+                if is_present:
+                    ax.annotate(f'{value:.2f}',
+                                xy=(rect.get_x() + rect.get_width() / 2, rect.get_height()),
+                                xytext=(0, 3),
+                                textcoords="offset points",
+                                ha='center', va='bottom', fontsize=8)
+
+        ax.set_title(title)
+        ax.set_xticks(x)
+        ax.set_xticklabels(models)
+        ax.set_ylim(0, 1.15)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+
+    axes[0].set_ylabel('Wartość metryki')
+    fig.suptitle('Porównanie precyzji i czułości – podejścia per model')
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=min(len(approaches), 3), framealpha=0.9)
+
+    plt.tight_layout(rect=[0, 0.08, 1, 0.92])
+
     output_path = os.path.join(output_dir, 'porownanie_precyzja_czulosc.png')
     plt.savefig(output_path, format='png', bbox_inches='tight')
     plt.savefig(output_path.replace('.png', '.pdf'), format='pdf', bbox_inches='tight')
     plt.close()
-    
+
     print(f"Zapisano wykres: {output_path}")
 
 
