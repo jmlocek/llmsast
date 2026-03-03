@@ -50,26 +50,26 @@ def load_results(results_dir: str, exclude_ragonhunter: bool = False, exclude_al
         # Granite-4h-Tiny
         'Granite-4h-Tiny': {
             'Podejście klasyczne': 'granite/diversevul_single_agent_progress.json',
-            'Podejście klasyczne + RAG (FP Remover)': 'granite/diversevul_single_agent_rag_progress .json',
+            'Podejście klasyczne + RAG': 'granite/diversevul_single_agent_rag_progress .json',
             'Podejście łańcuchowe': 'granite/diversevul_multi_agent_progress.json',
-            'Podejście łańcuchowe + RAG (Hunter + FP Remover)': 'granite/diversevul_multi_agent_rag_progress.json',
-            'Podejście łańcuchowe + RAG (Hunter)': 'granite/diversevul_multi_agent_ragonhunter_progress.json',
+            'Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)': 'granite/diversevul_multi_agent_rag_progress.json',
+            'Podejście łańcuchowe + RAG (dla agenta weryfikacji)': 'granite/diversevul_multi_agent_ragonhunter_progress.json',
         },
         # gpt-oss-20b
         'gpt-oss-20b': {
             'Podejście klasyczne': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_progress.json',
-            'Podejście klasyczne + RAG (FP Remover)': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_rag_progress.json',
+            'Podejście klasyczne + RAG': 'gpt-oss-20b/diverse_vuln/diversevul_single_agent_rag_progress.json',
             'Podejście łańcuchowe': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_progress.json',
-            'Podejście łańcuchowe + RAG (Hunter + FP Remover)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_rag_progress.json',
-            'Podejście łańcuchowe + RAG (Hunter)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_ragonhunter_progress.json',
+            'Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_rag_progress.json',
+            'Podejście łańcuchowe + RAG (dla agenta weryfikacji)': 'gpt-oss-20b/diverse_vuln/diversevul_multi_agent_ragonhunter_progress.json',
         },
         # gpt-oss-120b
         'gpt-oss-120b': {
             'Podejście klasyczne': 'gpt-oss-120b/diversevul_single_agent_progress.json',
-            'Podejście klasyczne + RAG (FP Remover)': 'gpt-oss-120b/diversevul_single_agent_rag_progress.json',
+            'Podejście klasyczne + RAG': 'gpt-oss-120b/diversevul_single_agent_rag_progress.json',
             'Podejście łańcuchowe': 'gpt-oss-120b/diversevul_multi_agent_progress.json',
-            'Podejście łańcuchowe + RAG (Hunter + FP Remover)': 'gpt-oss-120b/diversevul_multi_agent_rag_progress.json',
-            'Podejście łańcuchowe + RAG (Hunter)': 'gpt-oss-120b/diversevul_multi_agent_ragonhunter_progress.json',
+            'Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)': 'gpt-oss-120b/diversevul_multi_agent_rag_progress.json',
+            'Podejście łańcuchowe + RAG (dla agenta weryfikacji)': 'gpt-oss-120b/diversevul_multi_agent_ragonhunter_progress.json',
         },
     }
     
@@ -102,10 +102,10 @@ def get_models_and_approaches(results: dict):
             models.append(m)
     desired_order = [
         'Podejście klasyczne',
-        'Podejście klasyczne + RAG (FP Remover)',
+        'Podejście klasyczne + RAG',
         'Podejście łańcuchowe',
-        'Podejście łańcuchowe + RAG (Hunter + FP Remover)',
-        'Podejście łańcuchowe + RAG (Hunter)',
+        'Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)',
+        'Podejście łańcuchowe + RAG (dla agenta weryfikacji)',
     ]
 
     present = set()
@@ -203,7 +203,7 @@ def create_comparison_bar_chart(results: dict, metrics: list, output_path: str, 
             offset = (j - (len(approaches) - 1) / 2) * width
             ax.bar(x + offset, values, width, label=approach, color=color, edgecolor='black', linewidth=0.4)
 
-        ax.set_title(metric)
+        ax.set_title(f'Metryka: {metric}')
         ax.set_xticks(x)
         ax.set_xticklabels(models, rotation=0)
         ax.set_ylim(0, 1.15)
@@ -274,7 +274,7 @@ def create_model_comparison_chart(results: dict, output_dir: str):
                                 ha='center', va='bottom', fontsize=8)
 
         ax.set_ylabel('Wartość metryki')
-        ax.set_title('Powrównanie skutecznośći modeli w wykrywaniu podatności w kodzie dla poszczególnych rozwiazań')
+        ax.set_title(f'Porównanie modeli i podejść — {metric}')
         ax.set_xticks(x)
         ax.set_xticklabels(models)
         ax.legend(loc='upper right', framealpha=0.9)
@@ -327,7 +327,7 @@ def create_radar_chart(results: dict, output_dir: str):
     ax.set_xticklabels(metrics)
     ax.set_ylim(0, 1)
     ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0), fontsize=8)
-    ax.set_title('Powrównanie skutecznośći modeli w wykrywaniu podatności w kodzie dla poszczególnych rozwiazań', y=1.08)
+    ax.set_title('Profil metryk (Precyzja, Czułość, F1, F2) dla modeli i podejść', y=1.08)
     
     plt.tight_layout()
     
@@ -387,7 +387,7 @@ def create_heatmap(results: dict, output_dir: str):
             text = ax.text(j, i, f'{value:.2f}',
                           ha="center", va="center", color=text_color, fontsize=10)
     
-    ax.set_title('Powrównanie skutecznośći modeli w wykrywaniu podatności w kodzie dla poszczególnych rozwiazań')
+    ax.set_title('Mapa cieplna metryk dla modeli i podejść')
     
     # Pasek kolorów
     cbar = ax.figure.colorbar(im, ax=ax, shrink=0.8)
@@ -449,7 +449,7 @@ def create_grouped_metrics_chart(results: dict, output_dir: str):
                             ha='center', va='bottom', fontsize=8)
 
     ax.set_ylabel('Średnia wartość metryk')
-    ax.set_title('Powrównanie skutecznośći modeli w wykrywaniu podatności w kodzie dla poszczególnych rozwiazań')
+    ax.set_title('Średnia metryk (Precyzja, Czułość, F1, F2) dla modeli i podejść')
     ax.set_xticks(x)
     ax.set_xticklabels(models)
     ax.legend(loc='upper right', framealpha=0.9)
@@ -520,7 +520,7 @@ def create_f_scores_comparison(results: dict, output_dir: str):
         ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
 
     axes[0].set_ylabel('Wartość metryki')
-    fig.suptitle('Powrównanie skutecznośći modeli w wykrywaniu podatności w kodzie dla poszczególnych rozwiazań')
+    fig.suptitle('Porównanie wyników F1 i F2 dla modeli i podejść')
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc='lower center', ncol=min(len(approaches), 3), framealpha=0.9)
 
@@ -588,7 +588,7 @@ def create_precision_recall_chart(results: dict, output_dir: str):
         ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
 
     axes[0].set_ylabel('Wartość metryki')
-    fig.suptitle('Powrównanie skutecznośći modeli w wykrywaniu podatności w kodzie dla poszczególnych rozwiazań')
+    fig.suptitle('Porównanie precyzji i czułości dla modeli i podejść')
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc='lower center', ncol=min(len(approaches), 3), framealpha=0.9)
 
@@ -664,7 +664,7 @@ def generate_all_charts(results: dict, charts_dir: str, metrics: list):
         results, 
         metrics, 
         os.path.join(charts_dir, 'porownanie_glowne.png'),
-        'Powrównanie skutecznośći modeli w wykrywaniu podatności w kodzie dla poszczególnych rozwiazań'
+        'Porównanie metryk (Precyzja, Czułość, F1, F2) dla modeli i podejść'
     )
     
     # 2. Wykresy dla poszczególnych modeli

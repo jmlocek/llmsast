@@ -4,7 +4,7 @@ TABELA WYNIKÓW EWALUACJI
 
 Model                Konfiguracja                     Precyzja    Czułość         F1         F2       TP       FP       TN       FN
 ------------------------------------------------------------------------------------------------------------------------
-Granite-4h-Tiny      Podejście klasyczne                0.0000     0.0000     0.0000     0.0000        0        0      130      129
+Granite-4h-Tiny      Podejście klasyczne                0.0000     0.0000     0.0000     0.0000        0        0      130      130
 Granite-4h-Tiny      Podejście łańcuchowe               0.0000     0.0000     0.0000     0.0000        0        0       22       22
 gpt-oss-20b          Podejście klasyczne                0.7417     0.1464     0.2445     0.1744      112       39      754      653
 gpt-oss-20b          Podejście łańcuchowe               0.5846     0.5939     0.5892     0.5920      411      292      402      281
