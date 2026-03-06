@@ -263,7 +263,7 @@ def create_model_comparison_chart(results: dict, output_dir: str):
         results: Słownik z wynikami
         output_dir: Folder do zapisu wykresów
     """
-    metrics_pl = ['precyzja', 'czułość', 'F1', 'F2']
+    metrics_pl = ['precyzja', 'czułość', 'F1', 'F2', 'MCC']
     
     models, approaches = get_models_and_approaches(results)
     if not models or not approaches:
@@ -310,8 +310,12 @@ def create_model_comparison_chart(results: dict, output_dir: str):
         ax.set_xticks(x)
         ax.set_xticklabels(models)
         ax.legend(loc='upper right', framealpha=0.9)
-        ax.set_ylim(0, 1.15)
-        ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+        if metric == 'MCC':
+            ax.set_ylim(-1.05, 1.05)
+            ax.axhline(0, color='black', linewidth=0.8, alpha=0.7)
+        else:
+            ax.set_ylim(0, 1.15)
+            ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
 
         plt.tight_layout()
 
