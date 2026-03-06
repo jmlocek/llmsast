@@ -79,8 +79,8 @@ def load_results(results_dir: str, exclude_ragonhunter: bool = False, exclude_al
             # Pomiń wszystkie konfiguracje z RAG jeśli flaga jest ustawiona
             if exclude_all_rag and 'RAG' in config_name:
                 continue
-            # Pomiń konfiguracje RAG (Hunter) - tylko wariant "Hunter" bez "Hunter + FP Remover"
-            if exclude_ragonhunter and 'RAG (Hunter)' in config_name and 'Hunter + FP Remover' not in config_name:
+            # Pomiń konfigurację RAG tylko dla agenta weryfikacji
+            if exclude_ragonhunter and config_name == 'Podejście łańcuchowe + RAG (dla agenta weryfikacji)':
                 continue
             full_path = results_path / file_path
             if full_path.exists():
