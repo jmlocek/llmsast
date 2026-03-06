@@ -9,6 +9,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+from matplotlib.lines import Line2D
 from pathlib import Path
 
 # Ustawienia dla profesjonalnych wykresów do pracy magisterskiej
@@ -151,6 +152,25 @@ def calculate_metrics(data: dict) -> dict:
     
     # Swoistość (Specificity)
     specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+
+    # Ujemna wartość predykcyjna (Negative Predictive Value)
+    npv = tn / (tn + fn) if (tn + fn) > 0 else 0
+
+    # Zbalansowana dokładność (Balanced Accuracy)
+    balanced_accuracy = (recall + specificity) / 2
+
+    # False Positive Rate (FPR)
+    fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
+
+    # False Negative Rate (FNR)
+    fnr = fn / (fn + tp) if (fn + tp) > 0 else 0
+
+    # Youden's J statistic
+    youden_j = recall + specificity - 1
+
+    # Matthews Correlation Coefficient (MCC)
+    mcc_denominator = np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    mcc = ((tp * tn) - (fp * fn)) / mcc_denominator if mcc_denominator > 0 else 0
     
     return {
         'precyzja': precision,
@@ -159,6 +179,12 @@ def calculate_metrics(data: dict) -> dict:
         'F2': f2,
         'Dokładność': accuracy,
         'Swoistość': specificity,
+        'NPV': npv,
+        'Zbalansowana dokładność': balanced_accuracy,
+        'FPR': fpr,
+        'FNR': fnr,
+        'Youden J': youden_j,
+        'MCC': mcc,
         'TP': tp,
         'FP': fp,
         'TN': tn,
@@ -635,6 +661,222 @@ def create_precision_recall_chart(results: dict, output_dir: str):
     print(f"Zapisano wykres: {output_path}")
 
 
+def create_mcc_balanced_accuracy_chart(results: dict, output_dir: str):
+    """
+    Tworzy wykres porównujący MCC i zbalansowaną dokładność.
+
+    Args:
+        results: Słownik z wynikami
+        output_dir: Folder do zapisu wykresów
+    """
+    models, approaches = get_models_and_approaches(results)
+    if not models or not approaches:
+        print("Brak danych do utworzenia wykresu")
+        return
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=False)
+    colors = plt.cm.Set2(np.linspace(0, 1, max(len(approaches), 1)))
+    x = np.arange(len(models))
+    width = min(0.18, 0.8 / max(len(approaches), 1))
+
+    chart_setup = [
+        (
+            'MCC',
+            'Porównanie miary MCC dla wybranych dużych modeli językowych\n'
+            'oraz podejścia klasycznego i autorskiego łańcuchowego',
+            (-1.05, 1.05),
+            False,
+        ),
+        (
+            'Zbalansowana dokładność',
+            'Porównanie zbalansowanej dokładności dla wybranych dużych modeli językowych\n'
+            'oraz podejścia klasycznego i autorskiego łańcuchowego',
+            (0, 1.05),
+            True,
+        ),
+    ]
+
+    for ax, (metric, title, y_lim, as_percent) in zip(axes, chart_setup):
+        for j, (approach, color) in enumerate(zip(approaches, colors)):
+            values = []
+            present_mask = []
+            for model in models:
+                raw = results.get(model, {}).get(approach)
+                if raw:
+                    values.append(calculate_metrics(raw)[metric])
+                    present_mask.append(True)
+                else:
+                    values.append(0)
+                    present_mask.append(False)
+
+            offset = (j - (len(approaches) - 1) / 2) * width
+            rects = ax.bar(
+                x + offset,
+                values,
+                width,
+                label=approach,
+                color=color,
+                edgecolor='black',
+                linewidth=0.4,
+            )
+
+            for rect, value, is_present in zip(rects, values, present_mask):
+                if is_present:
+                    ax.annotate(
+                        f'{value:.2f}',
+                        xy=(rect.get_x() + rect.get_width() / 2, rect.get_height()),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha='center',
+                        va='bottom',
+                        fontsize=8,
+                    )
+
+        ax.set_title(title)
+        ax.set_xticks(x)
+        ax.set_xticklabels(models)
+        ax.set_ylim(*y_lim)
+        if as_percent:
+            ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+        else:
+            ax.axhline(0, color='black', linewidth=0.8, alpha=0.7)
+
+    axes[0].set_ylabel('Wartość miary')
+    fig.suptitle(
+        'Porównanie skuteczności detekcji podatności: MCC i zbalansowana dokładność\n'
+        'dla wybranych dużych modeli językowych oraz podejścia klasycznego i autorskiego łańcuchowego'
+    )
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=min(len(approaches), 3), framealpha=0.9)
+
+    plt.tight_layout(rect=[0, 0.08, 1, 0.92])
+
+    output_path = os.path.join(output_dir, 'porownanie_mcc_balanced_accuracy.png')
+    plt.savefig(output_path, format='png', bbox_inches='tight')
+    plt.savefig(output_path.replace('.png', '.pdf'), format='pdf', bbox_inches='tight')
+    plt.close()
+
+    print(f"Zapisano wykres: {output_path}")
+
+
+def create_precision_recall_scatter(results: dict, output_dir: str):
+    """
+    Tworzy wykres rozrzutu precyzja-czułość z rozmiarem punktu zależnym od F1.
+
+    Args:
+        results: Słownik z wynikami
+        output_dir: Folder do zapisu wykresów
+    """
+    models, approaches = get_models_and_approaches(results)
+    if not models or not approaches:
+        print("Brak danych do utworzenia wykresu")
+        return
+
+    approach_markers = ['o', 's', '^', 'D', 'P', 'X']
+    model_colors = plt.cm.tab10(np.linspace(0, 1, max(len(models), 1)))
+    approach_to_marker = {
+        approach: approach_markers[idx % len(approach_markers)]
+        for idx, approach in enumerate(approaches)
+    }
+    model_to_color = {model: model_colors[idx] for idx, model in enumerate(models)}
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    has_points = False
+    for model in models:
+        for approach in approaches:
+            raw = results.get(model, {}).get(approach)
+            if not raw:
+                continue
+            has_points = True
+            metrics = calculate_metrics(raw)
+            precision = metrics['precyzja']
+            recall = metrics['czułość']
+            f1 = metrics['F1']
+
+            ax.scatter(
+                recall,
+                precision,
+                s=80 + 220 * f1,
+                c=[model_to_color[model]],
+                marker=approach_to_marker[approach],
+                edgecolors='black',
+                linewidths=0.6,
+                alpha=0.9,
+            )
+
+            ax.annotate(
+                f"{model}\n{approach}",
+                (recall, precision),
+                textcoords='offset points',
+                xytext=(6, 6),
+                fontsize=8,
+                alpha=0.9,
+            )
+
+    if not has_points:
+        print("Brak danych do utworzenia wykresu")
+        plt.close(fig)
+        return
+
+    ax.set_xlabel('Czułość (Recall)')
+    ax.set_ylabel('Precyzja (Precision)')
+    ax.set_xlim(0, 1.02)
+    ax.set_ylim(0, 1.02)
+    ax.xaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+    ax.set_title(
+        'Relacja precyzja-czułość dla detekcji podatności\n'
+        'Kolor punktu = model, kształt punktu = podejście, rozmiar punktu = F1'
+    )
+
+    model_legend_items = [
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label=model,
+            markerfacecolor=color,
+            markeredgecolor='black',
+            markersize=8,
+        )
+        for model, color in model_to_color.items()
+    ]
+    approach_legend_items = [
+        Line2D(
+            [0],
+            [0],
+            marker=marker,
+            color='black',
+            linestyle='None',
+            label=approach,
+            markersize=8,
+        )
+        for approach, marker in approach_to_marker.items()
+    ]
+    size_legend_items = [
+        Line2D([0], [0], marker='o', color='black', linestyle='None', label='F1 ≈ 0.3', markersize=6),
+        Line2D([0], [0], marker='o', color='black', linestyle='None', label='F1 ≈ 0.6', markersize=9),
+        Line2D([0], [0], marker='o', color='black', linestyle='None', label='F1 ≈ 0.9', markersize=12),
+    ]
+
+    legend1 = ax.legend(handles=model_legend_items, title='Model', loc='lower left', framealpha=0.9)
+    ax.add_artist(legend1)
+    legend2 = ax.legend(handles=approach_legend_items, title='Podejście', loc='upper left', framealpha=0.9)
+    ax.add_artist(legend2)
+    ax.legend(handles=size_legend_items, title='Rozmiar (F1)', loc='lower right', framealpha=0.9)
+
+    plt.tight_layout()
+
+    output_path = os.path.join(output_dir, 'scatter_precyzja_czulosc_f1.png')
+    plt.savefig(output_path, format='png', bbox_inches='tight')
+    plt.savefig(output_path.replace('.png', '.pdf'), format='pdf', bbox_inches='tight')
+    plt.close()
+
+    print(f"Zapisano wykres: {output_path}")
+
+
 def generate_summary_table(results: dict, output_dir: str):
     """
     Generuje tabelę podsumowującą wszystkie wyniki.
@@ -644,27 +886,35 @@ def generate_summary_table(results: dict, output_dir: str):
         output_dir: Folder do zapisu
     """
     output_path = os.path.join(output_dir, 'tabela_wynikow.txt')
-    
+
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write("=" * 120 + "\n")
+        f.write("=" * 170 + "\n")
         f.write("TABELA WYNIKÓW EWALUACJI\n")
-        f.write("=" * 120 + "\n\n")
-        
-        header = f"{'Model':<20} {'Konfiguracja':<30} {'precyzja':>10} {'czułość':>10} {'F1':>10} {'F2':>10} {'TP':>8} {'FP':>8} {'TN':>8} {'FN':>8}\n"
+        f.write("=" * 170 + "\n\n")
+
+        header = (
+            f"{'Model':<20} {'Konfiguracja':<30} {'precyzja':>10} {'czułość':>10} {'F1':>10} {'F2':>10} "
+            f"{'MCC':>10} {'bal_acc':>10} {'FPR':>10} {'FNR':>10} {'TP':>8} {'FP':>8} {'TN':>8} {'FN':>8}\n"
+        )
         f.write(header)
-        f.write("-" * 120 + "\n")
-        
+        f.write("-" * 170 + "\n")
+
         for model_name, configs in results.items():
             for config_name, data in configs.items():
                 if data:
                     metrics = calculate_metrics(data)
-                    row = f"{model_name:<20} {config_name:<30} {metrics['precyzja']:>10.4f} {metrics['czułość']:>10.4f} {metrics['F1']:>10.4f} {metrics['F2']:>10.4f} {metrics['TP']:>8} {metrics['FP']:>8} {metrics['TN']:>8} {metrics['FN']:>8}\n"
+                    row = (
+                        f"{model_name:<20} {config_name:<30} {metrics['precyzja']:>10.4f} {metrics['czułość']:>10.4f} "
+                        f"{metrics['F1']:>10.4f} {metrics['F2']:>10.4f} {metrics['MCC']:>10.4f} "
+                        f"{metrics['Zbalansowana dokładność']:>10.4f} {metrics['FPR']:>10.4f} {metrics['FNR']:>10.4f} "
+                        f"{metrics['TP']:>8} {metrics['FP']:>8} {metrics['TN']:>8} {metrics['FN']:>8}\n"
+                    )
                     f.write(row)
-        
-        f.write("=" * 120 + "\n")
-    
+
+        f.write("=" * 170 + "\n")
+
     print(f"Zapisano tabelę: {output_path}")
-    
+
     # Generowanie również w formacie LaTeX
     latex_path = os.path.join(output_dir, 'tabela_wynikow.tex')
     with open(latex_path, 'w', encoding='utf-8') as f:
@@ -672,21 +922,25 @@ def generate_summary_table(results: dict, output_dir: str):
         f.write("\\centering\n")
         f.write("\\caption{Wyniki ewaluacji modeli}\n")
         f.write("\\label{tab:wyniki}\n")
-        f.write("\\begin{tabular}{llcccc}\n")
+        f.write("\\begin{tabular}{llcccccc}\n")
         f.write("\\toprule\n")
-        f.write("Model & Konfiguracja & precyzja & czułość & F1 & F2 \\\\\n")
+        f.write("Model & Konfiguracja & precyzja & czułość & F1 & F2 & MCC & BalAcc \\\\n")
         f.write("\\midrule\n")
-        
+
         for model_name, configs in results.items():
             for config_name, data in configs.items():
                 if data:
                     metrics = calculate_metrics(data)
-                    f.write(f"{model_name} & {config_name} & {metrics['precyzja']:.4f} & {metrics['czułość']:.4f} & {metrics['F1']:.4f} & {metrics['F2']:.4f} \\\\\n")
-        
+                    f.write(
+                        f"{model_name} & {config_name} & {metrics['precyzja']:.4f} & {metrics['czułość']:.4f} "
+                        f"& {metrics['F1']:.4f} & {metrics['F2']:.4f} & {metrics['MCC']:.4f} "
+                        f"& {metrics['Zbalansowana dokładność']:.4f} \\\\n"
+                    )
+
         f.write("\\bottomrule\n")
         f.write("\\end{tabular}\n")
         f.write("\\end{table}\n")
-    
+
     print(f"Zapisano tabelę LaTeX: {latex_path}")
 
 
@@ -719,8 +973,14 @@ def generate_all_charts(results: dict, charts_dir: str, metrics: list):
     
     # 7. Porównanie precyzji i czułości
     create_precision_recall_chart(results, charts_dir)
+
+    # 8. Porównanie MCC i zbalansowanej dokładności
+    create_mcc_balanced_accuracy_chart(results, charts_dir)
+
+    # 9. Wykres rozrzutu precyzja-czułość z rozmiarem punktu zależnym od F1
+    create_precision_recall_scatter(results, charts_dir)
     
-    # 8. Tabela podsumowująca
+    # 10. Tabela podsumowująca
     generate_summary_table(results, charts_dir)
 
 
