@@ -204,7 +204,7 @@ def create_comparison_bar_chart(results: dict, metrics: list, output_path: str, 
             ax.bar(x + offset, values, width, label=approach, color=color, edgecolor='black', linewidth=0.4)
 
         ax.set_title(
-            f'Porównanie metryki {metric} dla wybranych dużych modeli językowych\n'
+            f'Porównanie miary {metric} dla wybranych dużych modeli językowych\n'
             f'oraz podejścia klasycznego i autorskiego łańcuchowego'
         )
         ax.set_xticks(x)
@@ -278,7 +278,7 @@ def create_model_comparison_chart(results: dict, output_dir: str):
 
         ax.set_ylabel('Wartość metryki')
         ax.set_title(
-            f'Porównanie metryki {metric} dla wybranych dużych modeli językowych\n'
+            f'Porównanie miary {metric} dla wybranych dużych modeli językowych\n'
             f'oraz podejścia klasycznego i autorskiego łańcuchowego'
         )
         ax.set_xticks(x)
@@ -334,7 +334,7 @@ def create_radar_chart(results: dict, output_dir: str):
     ax.set_ylim(0, 1)
     ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0), fontsize=8)
     ax.set_title(
-        'Porównanie metryki Precyzja, Czułość, Wynik F1 i Wynik F2\n'
+        'Porównanie miar: czułości, precyzji, miary F1 i miary F2\n'
         'dla wybranych dużych modeli językowych oraz podejścia klasycznego i autorskiego łańcuchowego',
         y=1.08,
     )
@@ -398,7 +398,7 @@ def create_heatmap(results: dict, output_dir: str):
                           ha="center", va="center", color=text_color, fontsize=10)
     
     ax.set_title(
-        'Porównanie metryki Precyzja, Czułość, Wynik F1 i Wynik F2\n'
+        'Porównanie miar: czułości, precyzji, miary F1 i miary F2\n'
         'w mapie cieplnej dla wybranych dużych modeli językowych\n'
         'oraz podejścia klasycznego i autorskiego łańcuchowego'
     )
@@ -464,7 +464,7 @@ def create_grouped_metrics_chart(results: dict, output_dir: str):
 
     ax.set_ylabel('Średnia wartość metryk')
     ax.set_title(
-        'Porównanie metryki Średnia (Precyzja, Czułość, Wynik F1, Wynik F2)\n'
+        'Porównanie średniej miar: czułości, precyzji, miary F1 i miary F2\n'
         'dla wybranych dużych modeli językowych oraz podejścia klasycznego i autorskiego łańcuchowego'
     )
     ax.set_xticks(x)
@@ -505,9 +505,9 @@ def create_f_scores_comparison(results: dict, output_dir: str):
         axes,
         ['Wynik F1', 'Wynik F2'],
         [
-            'Porównanie metryki Wynik F1 dla wybranych dużych modeli językowych\n'
+            'Porównanie miary F1 dla wybranych dużych modeli językowych\n'
             'oraz podejścia klasycznego i autorskiego łańcuchowego',
-            'Porównanie metryki Wynik F2 dla wybranych dużych modeli językowych\n'
+            'Porównanie miary F2 dla wybranych dużych modeli językowych\n'
             'oraz podejścia klasycznego i autorskiego łańcuchowego',
         ],
     ):
@@ -543,7 +543,7 @@ def create_f_scores_comparison(results: dict, output_dir: str):
 
     axes[0].set_ylabel('Wartość metryki')
     fig.suptitle(
-        'Porównanie metryki Wynik F1 i Wynik F2 dla wybranych dużych modeli językowych\n'
+        'Porównanie metryk: miary F1 i miary F2 dla wybranych dużych modeli językowych\n'
         'oraz podejścia klasycznego i autorskiego łańcuchowego'
     )
     handles, labels = axes[0].get_legend_handles_labels()
@@ -581,9 +581,9 @@ def create_precision_recall_chart(results: dict, output_dir: str):
         axes,
         ['Precyzja', 'Czułość'],
         [
-            'Porównanie metryki Precyzja dla wybranych dużych modeli językowych\n'
+            'Porównanie miary precyzji dla wybranych dużych modeli językowych\n'
             'oraz podejścia klasycznego i autorskiego łańcuchowego',
-            'Porównanie metryki Czułość dla wybranych dużych modeli językowych\n'
+            'Porównanie miary czułości dla wybranych dużych modeli językowych\n'
             'oraz podejścia klasycznego i autorskiego łańcuchowego',
         ],
     ):
@@ -619,7 +619,7 @@ def create_precision_recall_chart(results: dict, output_dir: str):
 
     axes[0].set_ylabel('Wartość metryki')
     fig.suptitle(
-        'Porównanie metryki Precyzja i Czułość dla wybranych dużych modeli językowych\n'
+        'Porównanie miar: precyzji i czułości dla wybranych dużych modeli językowych\n'
         'oraz podejścia klasycznego i autorskiego łańcuchowego'
     )
     handles, labels = axes[0].get_legend_handles_labels()
@@ -697,7 +697,7 @@ def generate_all_charts(results: dict, charts_dir: str, metrics: list):
         results, 
         metrics, 
         os.path.join(charts_dir, 'porownanie_glowne.png'),
-        'Porównanie metryki Precyzja, Czułość, Wynik F1 i Wynik F2\n'
+        'Porównanie miar: czułości, precyzji, miary F1 i miary F2\n'
         'dla wybranych dużych modeli językowych\n'
         'oraz podejścia klasycznego i autorskiego łańcuchowego'
     )
