@@ -155,8 +155,8 @@ def calculate_metrics(data: dict) -> dict:
     return {
         'Precyzja': precision,
         'Czułość': recall,
-        'Wynik F1': f1,
-        'Wynik F2': f2,
+        'F1': f1,
+        'F2': f2,
         'Dokładność': accuracy,
         'Swoistość': specificity,
         'TP': tp,
@@ -237,7 +237,7 @@ def create_model_comparison_chart(results: dict, output_dir: str):
         results: Słownik z wynikami
         output_dir: Folder do zapisu wykresów
     """
-    metrics_pl = ['Precyzja', 'Czułość', 'Wynik F1', 'Wynik F2']
+    metrics_pl = ['Precyzja', 'Czułość', 'F1', 'F2']
     
     models, approaches = get_models_and_approaches(results)
     if not models or not approaches:
@@ -305,7 +305,7 @@ def create_radar_chart(results: dict, output_dir: str):
         results: Słownik z wynikami
         output_dir: Folder do zapisu wykresów
     """
-    metrics = ['Precyzja', 'Czułość', 'Wynik F1', 'Wynik F2']
+    metrics = ['Precyzja', 'Czułość', 'F1', 'F2']
     
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     
@@ -357,7 +357,7 @@ def create_heatmap(results: dict, output_dir: str):
         results: Słownik z wynikami
         output_dir: Folder do zapisu wykresów
     """
-    metrics = ['Precyzja', 'Czułość', 'Wynik F1', 'Wynik F2']
+    metrics = ['Precyzja', 'Czułość', 'F1', 'F2']
     
     # Przygotowanie danych
     labels = []
@@ -426,7 +426,7 @@ def create_grouped_metrics_chart(results: dict, output_dir: str):
         output_dir: Folder do zapisu wykresów
     """
     # Wykres podsumowujący: średnia z (Precyzja, Czułość, F1, F2) per model i podejście
-    metrics = ['Precyzja', 'Czułość', 'Wynik F1', 'Wynik F2']
+    metrics = ['Precyzja', 'Czułość', 'F1', 'F2']
     models, approaches = get_models_and_approaches(results)
     if not models or not approaches:
         print("Brak danych do utworzenia wykresu")
@@ -503,7 +503,7 @@ def create_f_scores_comparison(results: dict, output_dir: str):
 
     for ax, metric, title in zip(
         axes,
-        ['Wynik F1', 'Wynik F2'],
+        ['F1', 'F2'],
         [
             'Porównanie miary F1 dla wybranych dużych modeli językowych\n'
             'oraz podejścia klasycznego i autorskiego łańcuchowego',
@@ -658,7 +658,7 @@ def generate_summary_table(results: dict, output_dir: str):
             for config_name, data in configs.items():
                 if data:
                     metrics = calculate_metrics(data)
-                    row = f"{model_name:<20} {config_name:<30} {metrics['Precyzja']:>10.4f} {metrics['Czułość']:>10.4f} {metrics['Wynik F1']:>10.4f} {metrics['Wynik F2']:>10.4f} {metrics['TP']:>8} {metrics['FP']:>8} {metrics['TN']:>8} {metrics['FN']:>8}\n"
+                    row = f"{model_name:<20} {config_name:<30} {metrics['Precyzja']:>10.4f} {metrics['Czułość']:>10.4f} {metrics['F1']:>10.4f} {metrics['F2']:>10.4f} {metrics['TP']:>8} {metrics['FP']:>8} {metrics['TN']:>8} {metrics['FN']:>8}\n"
                     f.write(row)
         
         f.write("=" * 120 + "\n")
@@ -681,7 +681,7 @@ def generate_summary_table(results: dict, output_dir: str):
             for config_name, data in configs.items():
                 if data:
                     metrics = calculate_metrics(data)
-                    f.write(f"{model_name} & {config_name} & {metrics['Precyzja']:.4f} & {metrics['Czułość']:.4f} & {metrics['Wynik F1']:.4f} & {metrics['Wynik F2']:.4f} \\\\\n")
+                    f.write(f"{model_name} & {config_name} & {metrics['Precyzja']:.4f} & {metrics['Czułość']:.4f} & {metrics['F1']:.4f} & {metrics['F2']:.4f} \\\\\n")
         
         f.write("\\bottomrule\n")
         f.write("\\end{tabular}\n")
@@ -749,7 +749,7 @@ def main():
     print("=" * 60)
     print()
     
-    metrics = ['Precyzja', 'Czułość', 'Wynik F1', 'Wynik F2']
+    metrics = ['Precyzja', 'Czułość', 'F1', 'F2']
     
     # Wczytanie wyników
     print("Wczytywanie wyników...")
