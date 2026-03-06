@@ -1,22 +1,22 @@
-========================================================================================================================
+==========================================================================================================================================================================
 TABELA WYNIKÓW EWALUACJI
-========================================================================================================================
+==========================================================================================================================================================================
 
-Model                Konfiguracja                     precyzja    czułość         F1         F2       TP       FP       TN       FN
-------------------------------------------------------------------------------------------------------------------------
-Granite-4h-Tiny      Podejście klasyczne                0.0000     0.0000     0.0000     0.0000        0        0      130      130
-Granite-4h-Tiny      Podejście klasyczne + RAG          0.0000     0.0000     0.0000     0.0000        0        0      130      130
-Granite-4h-Tiny      Podejście łańcuchowe               0.0000     0.0000     0.0000     0.0000        0        0       22       22
-Granite-4h-Tiny      Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)     0.0000     0.0000     0.0000     0.0000        0        0      130      130
-Granite-4h-Tiny      Podejście łańcuchowe + RAG (dla agenta weryfikacji)     0.0000     0.0000     0.0000     0.0000        0        0      130      130
-gpt-oss-20b          Podejście klasyczne                0.7417     0.1464     0.2445     0.1744      112       39      754      653
-gpt-oss-20b          Podejście klasyczne + RAG          0.6490     0.2217     0.3305     0.2553       98       53      418      344
-gpt-oss-20b          Podejście łańcuchowe               0.5846     0.5939     0.5892     0.5920      411      292      402      281
-gpt-oss-20b          Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)     0.5194     0.4714     0.4942     0.4803      107       99      215      120
-gpt-oss-20b          Podejście łańcuchowe + RAG (dla agenta weryfikacji)     0.4630     0.6250     0.5319     0.5841       25       29       29       15
-gpt-oss-120b         Podejście klasyczne                0.5794     0.3125     0.4060     0.3442      135       98      330      297
-gpt-oss-120b         Podejście klasyczne + RAG          0.6858     0.2782     0.3958     0.3157      227      104      714      589
-gpt-oss-120b         Podejście łańcuchowe               0.5323     0.6839     0.5986     0.6471      264      232      165      122
-gpt-oss-120b         Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)     0.5742     0.6933     0.6281     0.6656      391      290      272      173
-gpt-oss-120b         Podejście łańcuchowe + RAG (dla agenta weryfikacji)     0.5591     0.7536     0.6420     0.7046       52       41       28       17
-========================================================================================================================
+Model                Konfiguracja                     precyzja    czułość         F1         F2        MCC    bal_acc        FPR        FNR       TP       FP       TN       FN
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Granite-4h-Tiny      Podejście klasyczne                0.0000     0.0000     0.0000     0.0000     0.0000     0.5000     0.0000     1.0000        0        0      130      130
+Granite-4h-Tiny      Podejście klasyczne + RAG          0.0000     0.0000     0.0000     0.0000     0.0000     0.5000     0.0000     1.0000        0        0      130      130
+Granite-4h-Tiny      Podejście łańcuchowe               0.0000     0.0000     0.0000     0.0000     0.0000     0.5000     0.0000     1.0000        0        0       22       22
+Granite-4h-Tiny      Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)     0.0000     0.0000     0.0000     0.0000     0.0000     0.5000     0.0000     1.0000        0        0      130      130
+Granite-4h-Tiny      Podejście łańcuchowe + RAG (dla agenta weryfikacji)     0.0000     0.0000     0.0000     0.0000     0.0000     0.5000     0.0000     1.0000        0        0      130      130
+gpt-oss-20b          Podejście klasyczne                0.7417     0.1464     0.2445     0.1744     0.1643     0.5486     0.0492     0.8536      112       39      754      653
+gpt-oss-20b          Podejście klasyczne + RAG          0.6490     0.2217     0.3305     0.2553     0.1469     0.5546     0.1125     0.7783       98       53      418      344
+gpt-oss-20b          Podejście łańcuchowe               0.5846     0.5939     0.5892     0.5920     0.1732     0.5866     0.4207     0.4061      411      292      402      281
+gpt-oss-20b          Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)     0.5194     0.4714     0.4942     0.4803     0.1586     0.5780     0.3153     0.5286      107       99      215      120
+gpt-oss-20b          Podejście łańcuchowe + RAG (dla agenta weryfikacji)     0.4630     0.6250     0.5319     0.5841     0.1235     0.5625     0.5000     0.3750       25       29       29       15
+gpt-oss-120b         Podejście klasyczne                0.5794     0.3125     0.4060     0.3442     0.0940     0.5418     0.2290     0.6875      135       98      330      297
+gpt-oss-120b         Podejście klasyczne + RAG          0.6858     0.2782     0.3958     0.3157     0.1879     0.5755     0.1271     0.7218      227      104      714      589
+gpt-oss-120b         Podejście łańcuchowe               0.5323     0.6839     0.5986     0.6471     0.1033     0.5498     0.5844     0.3161      264      232      165      122
+gpt-oss-120b         Podejście łańcuchowe + RAG (dla agenta detekcji i agenta weryfikacji)     0.5742     0.6933     0.6281     0.6656     0.1813     0.5886     0.5160     0.3067      391      290      272      173
+gpt-oss-120b         Podejście łańcuchowe + RAG (dla agenta weryfikacji)     0.5591     0.7536     0.6420     0.7046     0.1700     0.5797     0.5942     0.2464       52       41       28       17
+==========================================================================================================================================================================
