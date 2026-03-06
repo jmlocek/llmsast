@@ -2,7 +2,7 @@
 TABELA WYNIKÓW EWALUACJI
 ========================================================================================================================
 
-Model                Konfiguracja                     Precyzja    Czułość         F1         F2       TP       FP       TN       FN
+Model                Konfiguracja                     precyzja    czułość         F1         F2       TP       FP       TN       FN
 ------------------------------------------------------------------------------------------------------------------------
 Granite-4h-Tiny      Podejście klasyczne                0.0000     0.0000     0.0000     0.0000        0        0      130      130
 Granite-4h-Tiny      Podejście łańcuchowe               0.0000     0.0000     0.0000     0.0000        0        0       22       22
